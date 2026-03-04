@@ -1,0 +1,103 @@
+{
+  "projectType": "sdk-library",
+  "projectName": "Kreisler Packages",
+  "projectDescription": "A collection of TypeScript/JavaScript utility libraries and bot frameworks",
+  "theme": "palm",
+  "primaryColor": "#848c8e",
+  "lightColor": "#11161e",
+  "darkColor": "#cfd0d2",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Utilities",
+            "pages": [
+              "packages/createapi",
+              "packages/debounce",
+              "packages/try-catch",
+              "packages/exec-promise"
+            ]
+          },
+          {
+            "group": "Helpers & Tools",
+            "pages": [
+              "packages/js-helpers",
+              "packages/js-cron",
+              "packages/dirname-for-module"
+            ]
+          },
+          {
+            "group": "Bot Frameworks",
+            "pages": [
+              "packages/bot-tl-ts",
+              "packages/bot-wa-ts",
+              "packages/anime-api"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "API Documentation",
+            "pages": [
+              "api/createapi",
+              "api/debounce",
+              "api/try-catch",
+              "api/exec-promise",
+              "api/js-helpers",
+              "api/js-cron",
+              "api/dirname-for-module"
+            ]
+          },
+          {
+            "group": "Bot APIs",
+            "pages": [
+              "api/bot-tl-ts",
+              "api/bot-wa-ts",
+              "api/anime-api"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Type-safe API client with Proxy-based interface",
+    "Functional error handling with try-catch wrappers",
+    "Debounce utility with advanced features",
+    "Cron task management wrapper",
+    "Telegram and WhatsApp bot frameworks",
+    "Collection of JavaScript helper functions",
+    "Promise-based process execution",
+    "ESM dirname utility for modern Node.js"
+  ],
+  "publicApiSurface": [
+    "createApi()",
+    "debounce()",
+    "tryCatch()",
+    "tryToCatch()",
+    "tryFinally()",
+    "tryCatchFinally()",
+    "execPromise()",
+    "JsCron class",
+    "normalize()",
+    "stripHtmlTags()",
+    "abbreviateNumber()",
+    "base64converters",
+    "MarkdownWsp",
+    "TelegramBot class",
+    "WhatsAppBot class"
+  ]
+}
