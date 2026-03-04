@@ -1,0 +1,533 @@
+---
+title: '@kreisler/bot-wa-ts'
+description: 'A comprehensive WhatsApp bot framework built with TypeScript and Baileys'
+---
+
+# @kreisler/bot-wa-ts
+
+A powerful WhatsApp bot framework using TypeScript. Built on top of `baileys`, this package provides a complete solution for building WhatsApp bots with features like multi-device support, media handling, sticker generation, and automatic command loading.
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install @kreisler/bot-wa-ts
+```
+
+```bash pnpm
+pnpm add @kreisler/bot-wa-ts
+```
+
+```bash yarn
+yarn add @kreisler/bot-wa-ts
+```
+</CodeGroup>
+
+## Quick Start
+
+<Steps>
+  <Step title="Import the Whatsapp class">
+    ```typescript
+    import { Whatsapp } from '@kreisler/bot-wa-ts';
+    ```
+  </Step>
+
+  <Step title="Create and connect the bot">
+    ```typescript
+    const bot = new Whatsapp();
+    
+    await bot.WAConnect();
+    ```
+  </Step>
+
+  <Step title="Load handlers and commands">
+    ```typescript
+    bot.loadHandlers();
+    bot.loadCommands();
+    ```
+  </Step>
+</Steps>
+
+## Core Features
+
+### Whatsapp Class
+
+The main bot controller with extensive functionality:
+
+```typescript
+class Whatsapp {
+  sock: WASocket;              // Baileys socket instance
+  logger: any;                 // Pino logger
+  commands: Map<RegExp, CommandImport>;
+  folderCreds: string;         // Auth credentials folder
+  upTime: number;              // Bot start timestamp
+  
+  constructor() {
+    this.logger = pino({ level: 'silent' });
+    this.commands = new Map();
+    this.folderCreds = 'creds';
+    this.upTime = Date.now();
+  }
+}
+```
+
+## Connection & Authentication
+
+### Connect to WhatsApp
+
+Establish a connection with multi-device support:
+
+```typescript
+const bot = new Whatsapp();
+
+await bot.WAConnect();
+
+// The bot will:
+// 1. Load authentication state from './creds'
+// 2. Generate QR code if not authenticated
+// 3. Automatically reconnect on disconnect
+```
+
+<Note>
+The first time you run the bot, scan the QR code with WhatsApp to link the device. Authentication data is saved in the `creds` folder.
+</Note>
+
+### Custom Credentials Folder
+
+```typescript
+const bot = new Whatsapp();
+bot.folderCreds = 'my-custom-auth';
+
+await bot.WAConnect();
+```
+
+## Message Handling
+
+### Get Message Body
+
+Extract text from any message type:
+
+```typescript
+const messageBody = bot.getMessageBody(message);
+
+console.log(messageBody);
+// {
+//   body: 'Hello World',
+//   typeMessage: 'conversation',
+//   quotedBody?: { body: '...', typeMessage: '...' }
+// }
+```
+
+### Supported Message Types
+
+<Accordion title="Message Type Detection">
+```typescript
+enum WaMessageTypes {
+  extendedTextMessage = 'extendedTextMessage',
+  imageMessage = 'imageMessage',
+  videoMessage = 'videoMessage',
+  stickerMessage = 'stickerMessage',
+  audioMessage = 'audioMessage',
+  documentMessage = 'documentMessage',
+  documentWithCaptionMessage = 'documentWithCaptionMessage',
+  ephemeralMessage = 'ephemeralMessage',
+  conversation = 'conversation',
+  viewOnceMessageV2 = 'viewOnceMessageV2'
+}
+```
+</Accordion>
+
+## Sending Messages
+
+### Send Text Message
+
+```typescript
+await bot.sendText(
+  'phone@s.whatsapp.net',
+  { text: 'Hello from bot!' },
+  { quoted: originalMessage }
+);
+```
+
+### Send Media Group
+
+Send multiple media files efficiently:
+
+```typescript
+const media = [
+  { image: buffer1, caption: 'Photo 1' },
+  { video: buffer2, caption: 'Video 1' },
+  { image: buffer3 }
+];
+
+await bot.sendMsgGroup(
+  'phone@s.whatsapp.net',
+  media,
+  { /* options */ },
+  10  // batch size
+);
+```
+
+### Send Media Group to Multiple Chats
+
+```typescript
+const jids = [
+  'phone1@s.whatsapp.net',
+  'phone2@s.whatsapp.net',
+  'group@g.us'
+];
+
+await bot.sendMsgGroup(jids, media);
+```
+
+<Warning>
+When sending to multiple recipients with large media arrays, use batch sending to avoid rate limits:
+
+```typescript
+await bot.sendMsgGroupBatch(jids, media, {}, 5);
+```
+</Warning>
+
+## Media Handling
+
+### Download Media from Message
+
+Download any media file from a message:
+
+```typescript
+const buffer = await bot.getMedia(
+  message.message.imageMessage,
+  'image',
+  { /* options */ }
+);
+
+// Save to file
+fs.writeFileSync('image.jpg', buffer);
+```
+
+### Convert URL to Base64
+
+```typescript
+const [buffer, mimeType] = await bot.imageUrl2Base64(
+  'https://example.com/image.jpg'
+);
+
+const base64 = bot.buffer2base64(buffer, mimeType);
+// Returns: data:image/jpeg;base64,/9j/4AAQ...
+```
+
+## Sticker Generation
+
+### Create Stickers
+
+<Tabs>
+  <Tab title="From Buffer">
+    ```typescript
+    const stickerBuffer = await bot.stickerGenerator(
+      imageBuffer
+    );
+    
+    await bot.sock.sendMessage(jid, {
+      sticker: stickerBuffer
+    });
+    ```
+  </Tab>
+  
+  <Tab title="From URL">
+    ```typescript
+    const [buffer] = await bot.imageUrl2Base64(
+      'https://example.com/image.jpg'
+    );
+    
+    const stickerBuffer = await bot.stickerGenerator(buffer);
+    
+    await bot.sock.sendMessage(jid, {
+      sticker: stickerBuffer
+    });
+    ```
+  </Tab>
+  
+  <Tab title="From File Path">
+    ```typescript
+    const stickerMessage = await bot.stickerGeneratorFromPath(
+      './image.jpg'
+    );
+    
+    await bot.sock.sendMessage(jid, stickerMessage);
+    ```
+  </Tab>
+</Tabs>
+
+### Custom Sticker Options
+
+```typescript
+const sticker = new Sticker(imageBuffer, {
+  pack: 'My Sticker Pack',
+  author: 'Bot Author',
+  type: StickerTypes.FULL,  // or StickerTypes.CROPPED
+  quality: 100
+});
+
+const message = await sticker.toMessage();
+await bot.sock.sendMessage(jid, message);
+```
+
+## Command System
+
+### Creating Commands
+
+Commands are defined with RegExp patterns:
+
+```typescript
+export default {
+  active: true,
+  ExpReg: /^\/ping(?:@username)?$/im,
+  
+  async cmd(
+    client: Whatsapp, 
+    { wamsg, msg }: ContextMsg, 
+    match: RegExpMatchArray
+  ) {
+    const from = wamsg.key.remoteJid;
+    await client.sock.sendMessage(from, 
+      { text: '🏓 Pong!' }, 
+      { quoted: wamsg }
+    );
+  }
+}
+```
+
+### Command Structure
+
+```typescript
+interface CommandImport {
+  active: boolean;          // Enable/disable command
+  ExpReg: RegExp;          // Pattern to match
+  cmd: (
+    client: Whatsapp,
+    context: ContextMsg,
+    match: RegExpMatchArray
+  ) => Promise<void>;
+}
+
+interface ContextMsg {
+  wamsg: WAMessage;        // Original Baileys message
+  msg: Message;            // Wrapped message instance
+  body?: string;           // Message text
+  typeMessage: string;     // Message type
+  quotedBody?: BodyMsg;    // Quoted message data
+}
+```
+
+### Load Commands
+
+```typescript
+await bot.loadCommands();
+
+// Available commands:
+// - ping: Test bot latency
+// - stickers: Create stickers
+// - ig: Instagram downloader
+// - tiktok: TikTok downloader
+// - random: Random content
+// - uptime: Bot uptime
+// - config: Bot configuration
+// - delete: Delete messages
+// And more...
+```
+
+### Find and Execute Commands
+
+```typescript
+const text = '/ping';
+const [found, command] = bot.findCommand(text);
+
+if (found) {
+  const [regexp, cmdHandler] = command;
+  await cmdHandler.cmd(bot, context, text.match(regexp));
+}
+```
+
+## Utility Methods
+
+### Check Nested Properties
+
+Safely check if nested properties exist:
+
+```typescript
+const hasQuoted = bot.hasOwnProp(
+  message,
+  'extendedTextMessage.contextInfo.quotedMessage'
+);
+
+if (hasQuoted) {
+  // Property exists
+}
+```
+
+### Get Nested Properties
+
+Safely retrieve nested property values:
+
+```typescript
+const quotedText = bot.getNestedProp<string>(
+  message,
+  'extendedTextMessage.contextInfo.quotedMessage.conversation'
+);
+
+// Returns value or undefined if not found
+```
+
+## Event System
+
+The bot automatically handles these events:
+
+### Connection Updates
+
+```typescript
+// Automatically handled by loadEvents()
+// - connecting
+// - open (connected)
+// - close (disconnected)
+```
+
+### Message Updates
+
+```typescript
+// messages.upsert event
+// Automatically processes incoming messages
+// and executes matching commands
+```
+
+### Credentials Update
+
+```typescript
+// creds.update event
+// Automatically saves authentication state
+```
+
+## Bot Information
+
+### Get Bot Info
+
+```typescript
+const info = await bot.getMeInfo();
+
+console.log(info);
+// {
+//   id: 'phone@s.whatsapp.net',
+//   name: 'Bot Name'
+// }
+```
+
+### Get Uptime
+
+```typescript
+const uptime = Date.now() - bot.upTime;
+const seconds = Math.floor(uptime / 1000);
+const minutes = Math.floor(seconds / 60);
+const hours = Math.floor(minutes / 60);
+
+console.log(`Uptime: ${hours}h ${minutes % 60}m ${seconds % 60}s`);
+```
+
+## Complete Example
+
+```typescript
+import { Whatsapp } from '@kreisler/bot-wa-ts';
+import { printLog } from '@kreisler/bot-wa-ts';
+
+const bot = new Whatsapp();
+
+// Connect to WhatsApp
+await bot.WAConnect();
+printLog('✅ Connected', 'green');
+
+// Load handlers and commands
+bot.loadHandlers();
+bot.loadCommands();
+
+// Manual message sending
+await bot.sock.sendMessage(
+  'phone@s.whatsapp.net',
+  { text: 'Bot is online!' }
+);
+
+// Listen for custom events
+bot.sock.ev.on('messages.upsert', async ({ messages }) => {
+  const msg = messages[0];
+  if (!msg.message) return;
+  
+  const text = bot.getMessageBody(msg.message).body;
+  console.log('Received:', text);
+});
+```
+
+## Environment Configuration
+
+```bash
+BOT_USERNAME=your_bot_name
+NODE_ENV=production
+```
+
+## Dependencies
+
+This package depends on:
+
+- `baileys` - WhatsApp Web Multi-Device API
+- `wa-sticker-formatter` - Sticker creation
+- `pino` - Fast logging
+- `qrcode-terminal` - QR code display
+- `@kreisler/bot-services` - Shared bot services
+- `@kreisler/createapi` - API creation utilities
+- `@kreisler/js-helpers` - JavaScript utilities
+- `file-type` - File type detection
+
+## API Reference
+
+### Whatsapp Class Methods
+
+| Method | Parameters | Returns | Description |
+|--------|-----------|---------|-------------|
+| `WAConnect()` | - | `Promise<void>` | Connect to WhatsApp |
+| `getMeInfo()` | - | `Promise<UserInfo>` | Get bot user info |
+| `sendText()` | `jid, content, options` | `Promise<void>` | Send text message |
+| `sendMsgGroup()` | `jids, media, options, batchSize` | `Promise<Message[]>` | Send media group |
+| `getMedia()` | `msg, type, options` | `Promise<Buffer>` | Download media |
+| `stickerGenerator()` | `mediaData` | `Promise<Buffer>` | Create sticker |
+| `getMessageBody()` | `message` | `MessageBody` | Extract message text |
+| `hasOwnProp()` | `obj, prop` | `boolean` | Check nested property |
+| `getNestedProp()` | `obj, propPath` | `T \| undefined` | Get nested property |
+| `loadCommands()` | - | `Promise<void>` | Load command handlers |
+| `loadHandlers()` | - | `Promise<void>` | Load error handlers |
+| `loadEvents()` | - | `Promise<void>` | Load event handlers |
+
+## TypeScript Support
+
+Fully typed with comprehensive interfaces:
+
+```typescript
+import { Whatsapp, type ContextMsg, type CommandImport } from '@kreisler/bot-wa-ts';
+import type { WAMessage } from 'baileys';
+
+const bot: Whatsapp = new Whatsapp();
+
+const command: CommandImport = {
+  active: true,
+  ExpReg: /test/,
+  async cmd(client, context, match) {
+    // Fully typed parameters
+  }
+};
+```
+
+## License
+
+MIT
+
+## Links
+
+- [GitHub Repository](https://github.com/itskreisler/pkgs)
+- [NPM Package](https://www.npmjs.com/package/@kreisler/bot-wa-ts)
+- [Report Issues](https://github.com/itskreisler/pkgs/issues)
+- [Support the Author](https://www.buymeacoffee.com/kreisler)

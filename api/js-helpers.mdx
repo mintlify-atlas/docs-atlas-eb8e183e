@@ -1,0 +1,502 @@
+---
+title: '@kreisler/js-helpers'
+description: 'Collection of JavaScript utility functions for text processing, conversions, and formatting'
+---
+
+# @kreisler/js-helpers
+
+A comprehensive collection of utility functions for common JavaScript tasks including text normalization, number formatting, base64 encoding, unit conversions, and WhatsApp markdown formatting.
+
+## Installation
+
+```bash
+npm install @kreisler/js-helpers
+```
+
+## Re-exported Utilities
+
+This package also re-exports:
+- All exports from `@kreisler/debounce`
+- All exports from `@kreisler/createapi`
+- All exports from `@kreisler/try-catch` (as `TCatch` namespace)
+
+## Functions
+
+### Number Utilities
+
+#### abbreviateNumber
+
+Abbreviates large numbers with suffixes (k, M, B, T).
+
+<ParamField path="number" type="number" required>
+  The number to abbreviate.
+</ParamField>
+
+<ResponseField name="return" type="string">
+  The abbreviated number as a string (e.g., "1.5k", "2.3M").
+</ResponseField>
+
+#### bytes2Kb
+
+Converts bytes to kilobytes.
+
+<ParamField path="size" type="number" required>
+  Size in bytes.
+</ParamField>
+
+<ParamField path="decimal" type="number" default={2}>
+  Number of decimal places.
+</ParamField>
+
+<ResponseField name="return" type="string">
+  Size in KB as a string.
+</ResponseField>
+
+#### bytes2Mb
+
+Converts bytes to megabytes.
+
+<ParamField path="size" type="number" required>
+  Size in bytes.
+</ParamField>
+
+<ParamField path="decimal" type="number" default={2}>
+  Number of decimal places.
+</ParamField>
+
+<ResponseField name="return" type="string">
+  Size in MB as a string.
+</ResponseField>
+
+#### bytes2Gb
+
+Converts bytes to gigabytes.
+
+<ParamField path="size" type="number" required>
+  Size in bytes.
+</ParamField>
+
+<ParamField path="decimal" type="number" default={2}>
+  Number of decimal places.
+</ParamField>
+
+<ResponseField name="return" type="string">
+  Size in GB as a string.
+</ResponseField>
+
+### Temperature & Speed Conversions (converters namespace)
+
+#### kToF
+
+Converts Kelvin to Fahrenheit.
+
+<ParamField path="k" type="number" required>
+  Temperature in Kelvin.
+</ParamField>
+
+<ParamField path="precision" type="number" default={0}>
+  Number of decimal places.
+</ParamField>
+
+<ResponseField name="return" type="number">
+  Temperature in Fahrenheit.
+</ResponseField>
+
+#### kToC
+
+Converts Kelvin to Celsius.
+
+<ParamField path="k" type="number" required>
+  Temperature in Kelvin.
+</ParamField>
+
+<ParamField path="precision" type="number" default={0}>
+  Number of decimal places.
+</ParamField>
+
+<ResponseField name="return" type="number">
+  Temperature in Celsius.
+</ResponseField>
+
+#### msToMph
+
+Converts meters per second to miles per hour.
+
+<ParamField path="speed" type="number" required>
+  Speed in m/s.
+</ParamField>
+
+<ParamField path="precision" type="number" default={0}>
+  Number of decimal places.
+</ParamField>
+
+<ResponseField name="return" type="number">
+  Speed in mph.
+</ResponseField>
+
+#### msToKmh
+
+Converts meters per second to kilometers per hour.
+
+<ParamField path="speed" type="number" required>
+  Speed in m/s.
+</ParamField>
+
+<ParamField path="precision" type="number" default={0}>
+  Number of decimal places.
+</ParamField>
+
+<ResponseField name="return" type="number">
+  Speed in km/h.
+</ResponseField>
+
+### Base64 Utilities (base64converters namespace)
+
+#### utf8Tob64
+
+Converts UTF-8 string to base64.
+
+<ParamField path="str" type="string" required>
+  UTF-8 encoded string.
+</ParamField>
+
+<ResponseField name="return" type="string">
+  Base64 encoded string.
+</ResponseField>
+
+#### b64Toutf8
+
+Converts base64 to UTF-8 string.
+
+<ParamField path="str" type="string" required>
+  Base64 encoded string.
+</ParamField>
+
+<ResponseField name="return" type="string">
+  UTF-8 decoded string.
+</ResponseField>
+
+### Text Processing
+
+#### normalize
+
+Normalizes strings by removing accents and special characters.
+
+<ParamField path="str" type="string" required>
+  String to normalize.
+</ParamField>
+
+<ParamField path="urls" type="boolean" default={true}>
+  If `false`, converts to URL-safe format (lowercase with dashes).
+</ParamField>
+
+<ResponseField name="return" type="string">
+  Normalized string.
+</ResponseField>
+
+#### trimText
+
+Removes excessive whitespace and empty lines.
+
+<ParamField path="str" type="string" required>
+  String to trim.
+</ParamField>
+
+<ResponseField name="return" type="string">
+  Cleaned string.
+</ResponseField>
+
+#### stripHtmlTags
+
+Removes HTML tags from a string.
+
+<ParamField path="str" type="string" required>
+  String containing HTML.
+</ParamField>
+
+<ParamField path="exp" type="RegExp" default={/<[^>]*>/g}>
+  Custom regex pattern for tag removal.
+</ParamField>
+
+<ResponseField name="return" type="string">
+  String without HTML tags.
+</ResponseField>
+
+#### levenshteinDistance
+
+Calculates the Levenshtein distance between two strings.
+
+<ParamField path="a" type="string" required>
+  First string.
+</ParamField>
+
+<ParamField path="b" type="string" required>
+  Second string.
+</ParamField>
+
+<ResponseField name="return" type="number">
+  Edit distance between the strings.
+</ResponseField>
+
+#### titleSimilarity
+
+Calculates similarity between two titles (0-1 scale).
+
+<ParamField path="title1" type="string" required>
+  First title.
+</ParamField>
+
+<ParamField path="title2" type="string" required>
+  Second title.
+</ParamField>
+
+<ResponseField name="return" type="number">
+  Similarity score (0 = completely different, 1 = identical). A threshold of 0.8 is recommended for matching.
+</ResponseField>
+
+### Command Line Utilities
+
+#### argv2Object
+
+Converts command-line arguments to a key-value object.
+
+<ParamField path="argv" type="string[]" required>
+  Array of command-line arguments.
+</ParamField>
+
+<ParamField path="unixmode" type="boolean" default={true}>
+  Parse Unix-style arguments (`--key=value`, `-k value`).
+</ParamField>
+
+<ResponseField name="return" type="O">
+  Object with parsed key-value pairs.
+</ResponseField>
+
+### WhatsApp Markdown (MarkdownWsp object)
+
+#### Italic
+
+<ParamField path="text" type="string" required>
+  Text to format.
+</ParamField>
+
+<ResponseField name="return" type="string">
+  Text wrapped in underscores: `_text_`
+</ResponseField>
+
+#### Bold
+
+<ParamField path="text" type="string" required>
+  Text to format.
+</ParamField>
+
+<ResponseField name="return" type="string">
+  Text wrapped in asterisks: `*text*`
+</ResponseField>
+
+#### Strikethrough
+
+<ParamField path="text" type="string" required>
+  Text to format.
+</ParamField>
+
+<ResponseField name="return" type="string">
+  Text wrapped in tildes: `~text~`
+</ResponseField>
+
+#### Monospace
+
+<ParamField path="text" type="string" required>
+  Text to format.
+</ParamField>
+
+<ResponseField name="return" type="string">
+  Text wrapped in triple backticks: ` ```text``` `
+</ResponseField>
+
+#### Quote
+
+<ParamField path="text" type="string" required>
+  Text to format.
+</ParamField>
+
+<ResponseField name="return" type="string">
+  Text prefixed with `>`: `> text`
+</ResponseField>
+
+#### BulletedList
+
+<ParamField path="text" type="string | string[]" required>
+  Text or array of strings to format.
+</ParamField>
+
+<ParamField path="bulletPoint" type="'-' | '*'" default={"-"}>
+  Bullet character.
+</ParamField>
+
+<ResponseField name="return" type="string">
+  Formatted bulleted list.
+</ResponseField>
+
+#### NumberedLists
+
+<ParamField path="text" type="string | string[]" required>
+  Text or array of strings to format.
+</ParamField>
+
+<ResponseField name="return" type="string">
+  Formatted numbered list.
+</ResponseField>
+
+#### InlineCode
+
+<ParamField path="text" type="string" required>
+  Text to format.
+</ParamField>
+
+<ResponseField name="return" type="string">
+  Text wrapped in backticks: `` `text` ``
+</ResponseField>
+
+## Usage Examples
+
+### Number Formatting
+
+```typescript
+import { abbreviateNumber, bytes2Mb } from '@kreisler/js-helpers'
+
+console.log(abbreviateNumber(1500))      // "1.5k"
+console.log(abbreviateNumber(2500000))   // "2.5M"
+console.log(abbreviateNumber(1000000000)) // "1.0B"
+
+console.log(bytes2Mb(1967917)) // "1.88"
+```
+
+### Temperature Conversions
+
+```typescript
+import { converters } from '@kreisler/js-helpers'
+
+const kelvin = 300
+console.log(`${kelvin}K = ${converters.kToC(kelvin)}°C`) // "300K = 27°C"
+console.log(`${kelvin}K = ${converters.kToF(kelvin)}°F`) // "300K = 81°F"
+```
+
+### Speed Conversions
+
+```typescript
+import { converters } from '@kreisler/js-helpers'
+
+const speed = 10 // m/s
+console.log(`${speed} m/s = ${converters.msToKmh(speed)} km/h`) // "10 m/s = 36 km/h"
+console.log(`${speed} m/s = ${converters.msToMph(speed)} mph") // "10 m/s = 22 mph"
+```
+
+### Base64 Encoding
+
+```typescript
+import { base64converters } from '@kreisler/js-helpers'
+
+const text = 'Hello, World! 你好'
+const encoded = base64converters.utf8Tob64(text)
+console.log(encoded) // Base64 string
+
+const decoded = base64converters.b64Toutf8(encoded)
+console.log(decoded) // "Hello, World! 你好"
+```
+
+### Text Normalization
+
+```typescript
+import { normalize } from '@kreisler/js-helpers'
+
+console.log(normalize('ÁÉÍÓÚáéíóú')) // "AEIOUaeiou"
+console.log(normalize('Héllo Wörld!', false)) // "hello-world"
+```
+
+### HTML Stripping
+
+```typescript
+import { stripHtmlTags } from '@kreisler/js-helpers'
+
+const html = '<p>Hello <strong>World</strong>!</p>'
+console.log(stripHtmlTags(html)) // "Hello World!"
+```
+
+### String Similarity
+
+```typescript
+import { titleSimilarity } from '@kreisler/js-helpers'
+
+const similarity = titleSimilarity('Hello World', 'Hello World!')
+console.log(similarity) // 0.96
+
+if (similarity > 0.8) {
+  console.log('Titles are similar')
+}
+```
+
+### Command Line Parsing
+
+```typescript
+import { argv2Object } from '@kreisler/js-helpers'
+
+// Unix-style
+const args1 = argv2Object(['--name=John', '--age=30', '-v'])
+console.log(args1) // { name: 'John', age: '30', v: true }
+
+// Simple format
+const args2 = argv2Object(['name=John', 'age=30'], false)
+console.log(args2) // { name: 'John', age: '30' }
+```
+
+### WhatsApp Formatting
+
+```typescript
+import { MarkdownWsp } from '@kreisler/js-helpers'
+// or import individual functions:
+// import { Bold, Italic, BulletedList } from '@kreisler/js-helpers'
+
+const message = `
+${MarkdownWsp.Bold('Important Notice')}
+
+${MarkdownWsp.Italic('Please read carefully:')}
+
+${MarkdownWsp.BulletedList(['Item 1', 'Item 2', 'Item 3'])}
+
+${MarkdownWsp.InlineCode('const x = 10;')}
+
+${MarkdownWsp.Quote('This is a quote')}
+`
+
+console.log(message)
+```
+
+### Complete Example
+
+```typescript
+import {
+  abbreviateNumber,
+  bytes2Mb,
+  normalize,
+  stripHtmlTags,
+  titleSimilarity,
+  converters,
+  base64converters,
+  MarkdownWsp
+} from '@kreisler/js-helpers'
+
+// Process user data
+const userData = {
+  name: stripHtmlTags('<strong>John Doe</strong>'),
+  username: normalize('Jöhn Döe 123!', false), // "john-doe-123"
+  followers: abbreviateNumber(125000), // "125.0k"
+  storageUsed: bytes2Mb(5242880) + ' MB', // "5.00 MB"
+  location: {
+    temp: converters.kToC(300), // 27°C
+    windSpeed: converters.msToKmh(5) // 18 km/h
+  }
+}
+
+console.log(userData)
+```

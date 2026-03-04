@@ -1,0 +1,506 @@
+---
+title: "@kreisler/exec-promise"
+description: "Promise-based wrapper for Node.js child_process.exec with TypeScript support"
+---
+
+# @kreisler/exec-promise
+
+A simple, promise-based wrapper for Node.js `child_process.exec` that makes executing shell commands easier and more modern.
+
+## Installation
+
+<CodeGroup>
+
+```bash npm
+npm install @kreisler/exec-promise
+```
+
+```bash pnpm
+pnpm add @kreisler/exec-promise
+```
+
+```bash yarn
+yarn add @kreisler/exec-promise
+```
+
+</CodeGroup>
+
+## Overview
+
+The native Node.js `child_process.exec` uses callbacks, which can be cumbersome in modern async/await code. This package wraps it in a Promise, making it easier to use with async/await syntax.
+
+<Note>
+This package is designed for simple command execution. For more complex scenarios (streaming, real-time output), consider using `child_process.spawn` directly.
+</Note>
+
+## Basic Usage
+
+```typescript
+import { execPromise } from '@kreisler/exec-promise';
+
+const { stdout, stderr } = await execPromise('echo "Hello World"');
+console.log(stdout); // "Hello World\n"
+```
+
+## API Reference
+
+### execPromise
+
+Executes a shell command and returns a promise that resolves with stdout and stderr.
+
+```typescript
+async function execPromise(
+  comando: string
+): Promise<{ stdout: string; stderr: string }>
+```
+
+<ParamField path="comando" type="string" required>
+  The shell command to execute
+</ParamField>
+
+**Returns:** `Promise<{ stdout: string, stderr: string }>`
+
+<ParamField path="stdout" type="string">
+  The standard output from the command
+</ParamField>
+
+<ParamField path="stderr" type="string">
+  The standard error output from the command
+</ParamField>
+
+**Throws:** `ExecException` if the command fails
+
+## Examples
+
+### Simple Command Execution
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```typescript
+    import { execPromise } from '@kreisler/exec-promise';
+
+    async function runCommand() {
+      try {
+        const { stdout, stderr } = await execPromise('ls -la');
+        console.log('Output:', stdout);
+        
+        if (stderr) {
+          console.error('Errors:', stderr);
+        }
+      } catch (error) {
+        console.error('Command failed:', error.message);
+      }
+    }
+
+    runCommand();
+    ```
+  </Tab>
+  
+  <Tab title="JavaScript">
+    ```javascript
+    const { execPromise } = require('@kreisler/exec-promise');
+
+    async function runCommand() {
+      try {
+        const { stdout, stderr } = await execPromise('ls -la');
+        console.log('Output:', stdout);
+        
+        if (stderr) {
+          console.error('Errors:', stderr);
+        }
+      } catch (error) {
+        console.error('Command failed:', error.message);
+      }
+    }
+
+    runCommand();
+    ```
+  </Tab>
+</Tabs>
+
+### Windows Commands
+
+```typescript
+import { execPromise } from '@kreisler/exec-promise';
+
+// Windows example
+const { stdout } = await execPromise('echo %PATH%');
+console.log('System PATH:', stdout);
+
+// Directory listing on Windows
+const { stdout: files } = await execPromise('dir');
+console.log(files);
+```
+
+### Git Commands
+
+```typescript
+import { execPromise } from '@kreisler/exec-promise';
+
+async function getGitInfo() {
+  try {
+    // Get current branch
+    const { stdout: branch } = await execPromise('git branch --show-current');
+    console.log('Current branch:', branch.trim());
+
+    // Get git status
+    const { stdout: status } = await execPromise('git status --short');
+    console.log('Git status:', status);
+
+    // Get last commit
+    const { stdout: lastCommit } = await execPromise(
+      'git log -1 --pretty=format:"%h - %an: %s"'
+    );
+    console.log('Last commit:', lastCommit);
+  } catch (error) {
+    console.error('Git command failed:', error.message);
+  }
+}
+
+getGitInfo();
+```
+
+### NPM/Package Manager Commands
+
+```typescript
+import { execPromise } from '@kreisler/exec-promise';
+
+async function installDependencies() {
+  console.log('Installing dependencies...');
+  
+  try {
+    const { stdout, stderr } = await execPromise('npm install');
+    console.log(stdout);
+    
+    if (stderr && !stderr.includes('npm WARN')) {
+      console.error('Installation errors:', stderr);
+    }
+    
+    console.log('Installation complete!');
+  } catch (error) {
+    console.error('Installation failed:', error.message);
+  }
+}
+
+installDependencies();
+```
+
+### Build Scripts
+
+```typescript
+import { execPromise } from '@kreisler/exec-promise';
+
+async function buildProject() {
+  const steps = [
+    { name: 'Linting', command: 'npm run lint' },
+    { name: 'Testing', command: 'npm test' },
+    { name: 'Building', command: 'npm run build' }
+  ];
+
+  for (const step of steps) {
+    console.log(`\n${step.name}...`);
+    
+    try {
+      const { stdout, stderr } = await execPromise(step.command);
+      console.log(stdout);
+      
+      if (stderr) {
+        console.warn('Warnings:', stderr);
+      }
+    } catch (error) {
+      console.error(`${step.name} failed:`, error.message);
+      process.exit(1);
+    }
+  }
+  
+  console.log('\nBuild completed successfully!');
+}
+
+buildProject();
+```
+
+### Environment Variables
+
+```typescript
+import { execPromise } from '@kreisler/exec-promise';
+
+async function checkEnvironment() {
+  // Unix/Linux/macOS
+  const { stdout: nodeVersion } = await execPromise('node --version');
+  console.log('Node version:', nodeVersion.trim());
+
+  const { stdout: npmVersion } = await execPromise('npm --version');
+  console.log('NPM version:', npmVersion.trim());
+
+  // Check environment variable
+  const { stdout: home } = await execPromise('echo $HOME');
+  console.log('Home directory:', home.trim());
+}
+
+checkEnvironment();
+```
+
+## Common Use Cases
+
+<Accordion title="File System Operations">
+  ```typescript
+  import { execPromise } from '@kreisler/exec-promise';
+
+  // Create directory
+  await execPromise('mkdir -p ./output/logs');
+
+  // Copy files
+  await execPromise('cp ./src/config.json ./dist/');
+
+  // Remove files
+  await execPromise('rm -rf ./temp');
+
+  // Check if file exists
+  try {
+    await execPromise('test -f ./config.json');
+    console.log('File exists');
+  } catch {
+    console.log('File does not exist');
+  }
+  ```
+</Accordion>
+
+<Accordion title="System Information">
+  ```typescript
+  import { execPromise } from '@kreisler/exec-promise';
+
+  async function getSystemInfo() {
+    // Operating system
+    const { stdout: os } = await execPromise('uname -s');
+    console.log('OS:', os.trim());
+
+    // CPU information
+    const { stdout: cpu } = await execPromise('uname -m');
+    console.log('Architecture:', cpu.trim());
+
+    // Disk usage
+    const { stdout: disk } = await execPromise('df -h /');
+    console.log('Disk usage:', disk);
+  }
+
+  getSystemInfo();
+  ```
+</Accordion>
+
+<Accordion title="Network Operations">
+  ```typescript
+  import { execPromise } from '@kreisler/exec-promise';
+
+  async function checkNetwork() {
+    // Ping a server
+    try {
+      const { stdout } = await execPromise('ping -c 4 google.com');
+      console.log('Ping results:', stdout);
+    } catch (error) {
+      console.error('Network unreachable');
+    }
+
+    // Get IP address
+    const { stdout: ip } = await execPromise(
+      'hostname -I | awk \'{print $1}\''
+    );
+    console.log('IP address:', ip.trim());
+  }
+
+  checkNetwork();
+  ```
+</Accordion>
+
+<Accordion title="Docker Commands">
+  ```typescript
+  import { execPromise } from '@kreisler/exec-promise';
+
+  async function manageDocker() {
+    // List containers
+    const { stdout: containers } = await execPromise('docker ps');
+    console.log('Running containers:', containers);
+
+    // Build image
+    await execPromise('docker build -t myapp:latest .');
+
+    // Run container
+    const { stdout: containerId } = await execPromise(
+      'docker run -d -p 3000:3000 myapp:latest'
+    );
+    console.log('Container ID:', containerId.trim());
+
+    // Get logs
+    const { stdout: logs } = await execPromise(
+      `docker logs ${containerId.trim()}`
+    );
+    console.log('Container logs:', logs);
+  }
+
+  manageDocker();
+  ```
+</Accordion>
+
+## Error Handling
+
+<Warning>
+Always wrap `execPromise` calls in try-catch blocks to handle command failures.
+</Warning>
+
+```typescript
+import { execPromise } from '@kreisler/exec-promise';
+
+async function safeExec(command: string) {
+  try {
+    const { stdout, stderr } = await execPromise(command);
+    
+    return {
+      success: true,
+      stdout,
+      stderr,
+      error: null
+    };
+  } catch (error) {
+    return {
+      success: false,
+      stdout: '',
+      stderr: '',
+      error: error.message
+    };
+  }
+}
+
+// Usage
+const result = await safeExec('npm test');
+
+if (result.success) {
+  console.log('Command succeeded:', result.stdout);
+} else {
+  console.error('Command failed:', result.error);
+}
+```
+
+## Best Practices
+
+<Steps>
+
+<Step title="Validate Commands">
+  Always validate and sanitize command inputs to prevent command injection:
+  ```typescript
+  function isValidFilename(name: string): boolean {
+    return /^[a-zA-Z0-9._-]+$/.test(name);
+  }
+
+  async function safeDelete(filename: string) {
+    if (!isValidFilename(filename)) {
+      throw new Error('Invalid filename');
+    }
+    await execPromise(`rm ${filename}`);
+  }
+  ```
+</Step>
+
+<Step title="Handle Both stdout and stderr">
+  Check both output streams as some programs write to stderr even on success:
+  ```typescript
+  const { stdout, stderr } = await execPromise('npm install');
+  
+  if (stderr && !stderr.includes('npm WARN')) {
+    console.error('Actual errors:', stderr);
+  }
+  ```
+</Step>
+
+<Step title="Set Timeouts">
+  For long-running commands, consider implementing timeouts:
+  ```typescript
+  async function execWithTimeout(command: string, timeoutMs: number) {
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Command timeout')), timeoutMs);
+    });
+    
+    return Promise.race([
+      execPromise(command),
+      timeoutPromise
+    ]);
+  }
+  ```
+</Step>
+
+<Step title="Use Cross-Platform Commands">
+  Be aware of platform differences when writing commands:
+  ```typescript
+  const isWindows = process.platform === 'win32';
+  const command = isWindows 
+    ? 'dir' 
+    : 'ls -la';
+  
+  const { stdout } = await execPromise(command);
+  ```
+</Step>
+
+</Steps>
+
+## Limitations
+
+<Note>
+**When to use execPromise:**
+- Simple, short-lived commands
+- When you need the complete output after execution
+- Scripts and automation tasks
+
+**When NOT to use execPromise:**
+- Long-running processes (use `spawn` instead)
+- When you need real-time output streaming
+- When you need to interact with the process (stdin)
+- Large output that may exceed buffer size
+</Note>
+
+## Type Exports
+
+```typescript
+import type { Terror } from '@kreisler/exec-promise';
+
+// Terror: ExecException | null
+```
+
+The `Terror` type is exported from Node.js `child_process.ExecException`.
+
+## Comparison with Native exec
+
+<CodeGroup>
+
+```typescript Native exec
+import { exec } from 'child_process';
+
+exec('echo "Hello"', (error, stdout, stderr) => {
+  if (error) {
+    console.error('Error:', error);
+    return;
+  }
+  console.log('Output:', stdout);
+});
+```
+
+```typescript With @kreisler/exec-promise
+import { execPromise } from '@kreisler/exec-promise';
+
+try {
+  const { stdout, stderr } = await execPromise('echo "Hello"');
+  console.log('Output:', stdout);
+} catch (error) {
+  console.error('Error:', error);
+}
+```
+
+</CodeGroup>
+
+## License
+
+MIT License - see the [LICENSE](https://github.com/itskreisler/pkgs/blob/master/LICENSE) file for details.
+
+## Links
+
+- [GitHub Repository](https://github.com/itskreisler/pkgs)
+- [Package Homepage](https://github.com/itskreisler/pkgs/tree/master/packages/exec-promise#readme)
+- [Report Issues](https://github.com/itskreisler/pkgs/issues)
+- [Node.js child_process Documentation](https://nodejs.org/api/child_process.html)

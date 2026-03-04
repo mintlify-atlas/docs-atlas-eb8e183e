@@ -1,0 +1,345 @@
+---
+title: '@kreisler/bot-tl-ts'
+description: 'A powerful Telegram bot framework built with TypeScript and node-telegram-bot-api'
+---
+
+# @kreisler/bot-tl-ts
+
+A simple yet powerful Telegram bot framework using TypeScript. Built on top of `node-telegram-bot-api`, this package provides a structured approach to building Telegram bots with automatic command loading, event handling, and error management.
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install @kreisler/bot-tl-ts
+```
+
+```bash pnpm
+pnpm add @kreisler/bot-tl-ts
+```
+
+```bash yarn
+yarn add @kreisler/bot-tl-ts
+```
+</CodeGroup>
+
+## Quick Start
+
+<Steps>
+  <Step title="Import the ClientBot class">
+    The main class extends `TelegramBot` from `node-telegram-bot-api`:
+    
+    ```typescript
+    import { ClientBot } from '@kreisler/bot-tl-ts';
+    ```
+  </Step>
+
+  <Step title="Create a bot instance">
+    Initialize the bot with your token and options:
+    
+    ```typescript
+    const bot = new ClientBot('YOUR_BOT_TOKEN', {
+      polling: true
+    });
+    ```
+  </Step>
+
+  <Step title="Initialize the bot">
+    Start the bot and load all handlers:
+    
+    ```typescript
+    (async () => {
+      await bot.initialize();
+    })();
+    ```
+  </Step>
+</Steps>
+
+## Core Features
+
+### ClientBot Class
+
+The `ClientBot` class is the main bot controller that extends `TelegramBot`:
+
+```typescript
+export class ClientBot extends TelegramBot {
+  commands: Map<RegExp, IExportCMD>
+  slashArray: []
+  
+  constructor(
+    token: string,
+    options = { polling: true }
+  )
+}
+```
+
+### Automatic Loading
+
+The bot automatically loads:
+- **Events**: Message handlers and bot events
+- **Commands**: RegExp-based command handlers
+- **Handlers**: Anti-crash and error handlers
+
+```typescript
+async initialize() {
+  await this.loadEvents();
+  await this.loadHandlers();
+  await this.loadCommands();
+}
+```
+
+## Command System
+
+### Creating Commands
+
+Commands are defined using RegExp patterns and handler functions:
+
+```typescript
+export default {
+  active: true,
+  regexp: new RegExp(`^/ping(?:@${BOT_USERNAME})?$`, 'im'),
+  
+  async cmd(client: ClientBot, { msg, ctx }, match: RegExpMatchArray) {
+    const start = Number(new Date());
+    const send = await ctx.send({ text: '*Pinging...*' }, { 
+      parse_mode: 'Markdown' 
+    });
+    const end = Number(new Date());
+    const ping = end - start;
+    
+    await send.editText(
+      `*Pong! Latency is* \`${ping}ms\``, 
+      { parse_mode: 'Markdown' }
+    );
+  }
+}
+```
+
+### Command Structure
+
+<Accordion title="Command Interface">
+```typescript
+interface IExportCMD {
+  active: boolean;          // Enable/disable command
+  regexp: RegExp;           // Pattern to match
+  cmd: (                    // Handler function
+    client: ClientBot,
+    context: ICTX,
+    match: RegExpMatchArray
+  ) => Promise<void>;
+}
+```
+</Accordion>
+
+### Finding Commands
+
+The bot provides methods to work with commands:
+
+```typescript
+// Get all registered commands
+const commands = bot.getCommands;
+
+// Find a command by text
+const [found, command] = bot.findCommand('/ping');
+if (found) {
+  const [regexp, cmdHandler] = command;
+  // Execute command
+}
+```
+
+## Extended Methods
+
+### Send Media Group (10 by 10)
+
+Send multiple photos in batches of 10:
+
+```typescript
+const medias = [
+  { type: 'photo', media: 'https://example.com/photo1.jpg' },
+  { type: 'photo', media: 'https://example.com/photo2.jpg' },
+  // ... up to 50 photos
+];
+
+await bot.sendMediaGroupTenByTen(
+  chatId,
+  medias,
+  { /* options */ }
+);
+```
+
+<Note>
+Telegram limits media groups to 10 items per request. This method automatically splits your media array into chunks of 10 and sends them sequentially.
+</Note>
+
+### Send Documents One by One
+
+Send multiple documents sequentially:
+
+```typescript
+const documents = [
+  './file1.pdf',
+  './file2.pdf',
+  Buffer.from('data'),
+  readStream
+];
+
+await bot.sendDocumentOnebyOne(
+  chatId,
+  documents,
+  { caption: 'Documents' },
+  { filename: 'custom.pdf' }
+);
+```
+
+## Event System
+
+### Message Events
+
+The framework automatically handles message events:
+
+```typescript
+// src/bot/events/client/message.ts
+export const handler = async (client: ClientBot, msg: TelegramBot.Message) => {
+  // Your message handling logic
+  const text = msg.text;
+  const chatId = msg.chat.id;
+  
+  // Find and execute matching command
+  const [found, command] = client.findCommand(text);
+  if (found) {
+    const [regexp, cmdHandler] = command;
+    await cmdHandler.cmd(client, { msg, ctx }, text.match(regexp));
+  }
+};
+```
+
+## Environment Configuration
+
+<Tabs>
+  <Tab title="Development">
+    Set up your development token:
+    
+    ```bash
+    TELEGRAM_TOKEN_DEV=your_dev_token_here
+    NODE_ENV=development
+    BOT_USERNAME=YourBotUsername
+    ```
+  </Tab>
+  
+  <Tab title="Production">
+    Set up your production token:
+    
+    ```bash
+    TELEGRAM_TOKEN_PROD=your_prod_token_here
+    NODE_ENV=production
+    BOT_USERNAME=YourBotUsername
+    ```
+  </Tab>
+</Tabs>
+
+## Error Handling
+
+The framework includes built-in anti-crash handlers:
+
+```typescript
+// Automatically loaded by initialize()
+await bot.loadHandlers();
+
+// Handles:
+// - uncaughtException
+// - unhandledRejection
+// - process warnings
+```
+
+<Warning>
+Always use the `initialize()` method to ensure all handlers are properly loaded before the bot starts receiving messages.
+</Warning>
+
+## Dependencies
+
+This package depends on:
+
+- `node-telegram-bot-api` - Core Telegram Bot API wrapper
+- `@kreisler/bot-services` - Shared bot services
+- `@kreisler/createapi` - API creation utilities
+- `@kreisler/debounce` - Command debouncing
+- `@kreisler/js-helpers` - JavaScript helper utilities
+- `@kreisler/try-catch` - Enhanced error handling
+- `file-type` - File type detection
+
+## Advanced Usage
+
+### Dynamic Import
+
+The bot supports dynamic imports for commands and events:
+
+```typescript
+async dynamicImport<O>(path: string): Promise<O> {
+  return await import(path);
+}
+
+// Usage
+const module = await bot.dynamicImport<CommandModule>('@/commands/custom.js');
+```
+
+### Custom Command Loading
+
+Add your own commands dynamically:
+
+```typescript
+const customCommand = {
+  active: true,
+  regexp: /\/custom/i,
+  async cmd(client, { msg }, match) {
+    await client.sendMessage(msg.chat.id, 'Custom command!');
+  }
+};
+
+bot.commands.set(customCommand.regexp, customCommand);
+```
+
+## API Reference
+
+### ClientBot Methods
+
+| Method | Parameters | Returns | Description |
+|--------|-----------|---------|-------------|
+| `initialize()` | - | `Promise<void>` | Load all events, handlers, and commands |
+| `getCommands` | - | `[RegExp, IExportCMD][]` | Get all registered commands |
+| `findCommand(str)` | `string` | `[boolean, [RegExp, IExportCMD] \| []]` | Find command by text |
+| `sendMediaGroupTenByTen()` | `chatId, medias, options` | `Promise<Message[]>` | Send media in batches of 10 |
+| `sendDocumentOnebyOne()` | `chatId, documents, options, fileOptions` | `Promise<Message[]>` | Send documents sequentially |
+| `loadEvents()` | - | `Promise<void>` | Load event handlers |
+| `loadCommands()` | - | `Promise<void>` | Load command handlers |
+| `loadHandlers()` | - | `Promise<void>` | Load error handlers |
+
+## TypeScript Support
+
+Fully typed with TypeScript definitions:
+
+```typescript
+import { ClientBot } from '@kreisler/bot-tl-ts';
+import type { IClsBot } from '@kreisler/bot-tl-ts';
+
+const bot: ClientBot = new ClientBot(token);
+
+// Full type safety for command handlers
+const handler: IClsBot.IExportCMD = {
+  active: true,
+  regexp: /test/,
+  async cmd(client, context, match) {
+    // All parameters are fully typed
+  }
+};
+```
+
+## License
+
+MIT
+
+## Links
+
+- [GitHub Repository](https://github.com/itskreisler/pkgs)
+- [NPM Package](https://www.npmjs.com/package/@kreisler/bot-tl-ts)
+- [Report Issues](https://github.com/itskreisler/pkgs/issues)
+- [Support the Author](https://www.buymeacoffee.com/kreisler)

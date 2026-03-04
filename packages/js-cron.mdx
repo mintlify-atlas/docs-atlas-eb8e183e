@@ -1,0 +1,601 @@
+---
+title: '@kreisler/js-cron'
+description: 'A powerful wrapper for node-cron with type-safe cron expression builder and task management'
+---
+
+# @kreisler/js-cron
+
+A TypeScript wrapper for [node-cron](https://www.npmjs.com/package/node-cron) that provides a clean API for managing scheduled tasks with advanced features like task lifecycle management, type-safe cron expression building, and timezone support.
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install @kreisler/js-cron
+```
+
+```bash pnpm
+pnpm add @kreisler/js-cron
+```
+
+```bash yarn
+yarn add @kreisler/js-cron
+```
+</CodeGroup>
+
+## Quick Start
+
+```typescript
+import { JsCron } from '@kreisler/js-cron';
+
+// Create a cron instance with timezone
+const cron = new JsCron({ 
+  timezone: 'America/Bogota',
+  runOnInit: true 
+});
+
+// Create a task that runs every 10 seconds
+const result = cron.createTask(
+  'myTask',
+  '*/10 * * * * *',
+  () => console.log('Task executed!')
+);
+
+if (result.success) {
+  console.log(result.message); // 'Tarea "myTask" creada con éxito.'
+}
+```
+
+## JsCron Class
+
+### Constructor
+
+Create a new JsCron instance with optional configuration.
+
+```typescript
+const cron = new JsCron(options);
+```
+
+<ParamField path="options" type="ScheduleOptions">
+  Configuration object for the cron instance:
+  
+  <ParamField path="timezone" type="string">
+    Timezone for scheduling tasks (e.g., 'America/New_York', 'Europe/London', 'Asia/Tokyo')
+  </ParamField>
+  
+  <ParamField path="runOnInit" type="boolean" default="false">
+    Whether to run the task immediately upon creation
+  </ParamField>
+  
+  <ParamField path="scheduled" type="boolean" default="true">
+    Whether the task is scheduled to run
+  </ParamField>
+  
+  <ParamField path="recoverMissedExecutions" type="boolean" default="false">
+    Whether to execute missed tasks when the process starts
+  </ParamField>
+</ParamField>
+
+**Example:**
+
+```typescript
+import { JsCron } from '@kreisler/js-cron';
+
+const cron = new JsCron({
+  timezone: 'America/New_York',
+  runOnInit: false,
+  scheduled: true
+});
+```
+
+### Task Management Methods
+
+#### createTask()
+
+Create and schedule a new task.
+
+```typescript
+const result = cron.createTask(taskName, cronExpression, callback);
+```
+
+<ParamField path="taskName" type="string" required>
+  Unique name for the task. Used to identify and manage the task later.
+</ParamField>
+
+<ParamField path="cronExpression" type="string" required>
+  Valid cron expression defining when the task should run.
+</ParamField>
+
+<ParamField path="callback" type="() => void" required>
+  Function to execute when the task runs.
+</ParamField>
+
+**Returns:** Object with `success`, `message`, and optionally `task` properties.
+
+```typescript
+import { JsCron } from '@kreisler/js-cron';
+
+const cron = new JsCron({ timezone: 'America/Bogota' });
+
+// Execute every 15 minutes between 6:00 and 23:00
+const result = cron.createTask(
+  'dailyReport',
+  '0 */15 6-23 * * *',
+  () => {
+    console.log('Generating daily report...');
+    // Your task logic here
+  }
+);
+
+if (!result.success) {
+  console.error(result.message);
+}
+```
+
+<Note>
+  The `createTask` method validates the cron expression before creating the task. If the expression is invalid or a task with the same name already exists, it returns an error message.
+</Note>
+
+#### destroyTask()
+
+Stop and remove a task permanently.
+
+```typescript
+const result = cron.destroyTask(taskName);
+```
+
+<ParamField path="taskName" type="string" required>
+  Name of the task to destroy
+</ParamField>
+
+**Returns:** Object with `success` and `message` properties.
+
+```typescript
+const result = cron.destroyTask('dailyReport');
+
+if (result.success) {
+  console.log(result.message); // 'Tarea "dailyReport" destruida con éxito.'
+}
+```
+
+#### pauseTask()
+
+Temporarily stop a task without removing it.
+
+```typescript
+const result = cron.pauseTask(taskName);
+```
+
+<ParamField path="taskName" type="string" required>
+  Name of the task to pause
+</ParamField>
+
+**Returns:** Object with `success` and `message` properties.
+
+```typescript
+const result = cron.pauseTask('dailyReport');
+console.log(result.message); // 'Tarea "dailyReport" pausada.'
+```
+
+#### resumeTask()
+
+Resume a paused task.
+
+```typescript
+const result = cron.resumeTask(taskName);
+```
+
+<ParamField path="taskName" type="string" required>
+  Name of the task to resume
+</ParamField>
+
+**Returns:** Object with `success` and `message` properties.
+
+```typescript
+const result = cron.resumeTask('dailyReport');
+console.log(result.message); // 'Tarea "dailyReport" reanudada.'
+```
+
+### Query Methods
+
+#### getTasks()
+
+Get all registered tasks.
+
+```typescript
+const tasks = cron.getTasks();
+```
+
+**Returns:** `Map<string, ScheduledTask>` - Map of all tasks with their names as keys.
+
+```typescript
+const tasks = cron.getTasks();
+
+console.log(`Total tasks: ${tasks.size}`);
+
+tasks.forEach((task, name) => {
+  console.log(`Task: ${name}`);
+});
+```
+
+#### getTask()
+
+Get a specific task by name.
+
+```typescript
+const task = cron.getTask(taskName);
+```
+
+<ParamField path="taskName" type="string" required>
+  Name of the task to retrieve
+</ParamField>
+
+**Returns:** `ScheduledTask | undefined` - The task object or undefined if not found.
+
+```typescript
+const task = cron.getTask('dailyReport');
+
+if (task) {
+  console.log('Task found!');
+  // You can call task.start(), task.stop(), etc.
+}
+```
+
+#### hasTask()
+
+Check if a task exists.
+
+```typescript
+const exists = cron.hasTask(taskName);
+```
+
+<ParamField path="taskName" type="string" required>
+  Name of the task to check
+</ParamField>
+
+**Returns:** `boolean` - True if the task exists, false otherwise.
+
+```typescript
+if (cron.hasTask('dailyReport')) {
+  console.log('Task already exists!');
+} else {
+  cron.createTask('dailyReport', '0 9 * * *', () => {
+    console.log('Running report...');
+  });
+}
+```
+
+## Cron Expression Builder
+
+The package includes a type-safe cron expression builder with IntelliSense support.
+
+### buildCronExpression()
+
+Build cron expressions using a typed object instead of strings.
+
+```typescript
+import { buildCronExpression } from '@kreisler/js-cron';
+
+const expression = buildCronExpression({
+  second: '0',
+  minute: '*/15',
+  hour: '6-23',
+  dayOfMonth: '*',
+  month: '*',
+  dayOfWeek: '*',
+  year: '*'
+});
+
+console.log(expression); // '0 */15 6-23 * * * *'
+```
+
+### CronFields Interface
+
+All fields are optional and default to `*`. The builder provides IntelliSense for valid values:
+
+<Tabs>
+  <Tab title="Second">
+    <ParamField path="second" type="SecondType">
+      Valid values: 0-59, `*`, ranges (e.g., `10-20`), steps (e.g., `*/5`), lists (e.g., `10,20,30`)
+    </ParamField>
+    
+    ```typescript
+    // Examples
+    second: '0'        // At second 0
+    second: '*/10'     // Every 10 seconds
+    second: '0,30'     // At seconds 0 and 30
+    second: '10-20'    // Seconds 10 through 20
+    ```
+  </Tab>
+  
+  <Tab title="Minute">
+    <ParamField path="minute" type="MinuteType">
+      Valid values: 0-59, `*`, ranges, steps, predefined patterns like `'0,15,30,45'`
+    </ParamField>
+    
+    ```typescript
+    // Common patterns with IntelliSense
+    minute: '0,15,30,45'  // Every quarter hour
+    minute: '0,30'        // Every half hour
+    minute: '*/5'         // Every 5 minutes
+    minute: '10,44'       // At minutes 10 and 44
+    ```
+  </Tab>
+  
+  <Tab title="Hour">
+    <ParamField path="hour" type="HourType">
+      Valid values: 0-23, `*`, ranges, steps, predefined patterns like `'9,12,15'`
+    </ParamField>
+    
+    ```typescript
+    // Common patterns with IntelliSense
+    hour: '9,17'       // 9 AM and 5 PM
+    hour: '14,18'      // 2 PM and 6 PM
+    hour: '9-17'       // Business hours
+    hour: '0,6,12,18'  // Every 6 hours
+    ```
+  </Tab>
+  
+  <Tab title="Day of Month">
+    <ParamField path="dayOfMonth" type="DayOfMonthType">
+      Valid values: 1-31, `*`, `?`, `L` (last), `W` (weekday), ranges, steps
+    </ParamField>
+    
+    ```typescript
+    dayOfMonth: '1'      // First day of month
+    dayOfMonth: '1,15'   // 1st and 15th
+    dayOfMonth: 'L'      // Last day of month
+    dayOfMonth: '15W'    // Nearest weekday to 15th
+    dayOfMonth: 'LW'     // Last weekday of month
+    ```
+  </Tab>
+  
+  <Tab title="Month">
+    <ParamField path="month" type="MonthType">
+      Valid values: 1-12, month names (JAN-DEC), `*`, ranges, steps
+    </ParamField>
+    
+    ```typescript
+    month: 'JAN'              // January
+    month: 'JAN,APR,JUL,OCT'  // Quarterly
+    month: 'JAN-MAR'          // Q1
+    month: '1-6'              // First half of year
+    ```
+  </Tab>
+  
+  <Tab title="Day of Week">
+    <ParamField path="dayOfWeek" type="DayOfWeekType">
+      Valid values: 0-7 (0 and 7 are Sunday), day names (SUN-SAT), `*`, `?`, `L`, `#` (nth occurrence)
+    </ParamField>
+    
+    ```typescript
+    dayOfWeek: 'MON-FRI'  // Weekdays
+    dayOfWeek: 'SAT-SUN'  // Weekend
+    dayOfWeek: '5L'       // Last Friday
+    dayOfWeek: '5#3'      // Third Friday
+    dayOfWeek: 'MON'      // Mondays only
+    ```
+  </Tab>
+  
+  <Tab title="Year">
+    <ParamField path="year" type="YearType">
+      Valid values: 1970-2099, `*`, ranges, predefined ranges like `'2024-2030'`
+    </ParamField>
+    
+    ```typescript
+    year: '*'           // Every year
+    year: '2024'        // Only 2024
+    year: '2024-2030'   // Range with IntelliSense
+    year: '2020-2025'   // Custom range
+    ```
+  </Tab>
+</Tabs>
+
+### Cron Expression Format
+
+<Note>
+  Cron expressions consist of 7 fields:
+  
+  ```
+  ┌───────────── second (0 - 59)
+  │ ┌───────────── minute (0 - 59)
+  │ │ ┌───────────── hour (0 - 23)
+  │ │ │ ┌───────────── day of month (1 - 31)
+  │ │ │ │ ┌───────────── month (1 - 12 or JAN-DEC)
+  │ │ │ │ │ ┌───────────── day of week (0 - 7 or SUN-SAT)
+  │ │ │ │ │ │ ┌───────────── year (1970 - 2099, optional)
+  │ │ │ │ │ │ │
+  * * * * * * *
+  ```
+  
+  Useful resources:
+  - [CronJob.xyz](https://cronjob.xyz/) - Visual cron expression builder
+  - [Crontab.guru](https://crontab.guru/) - Cron expression explainer
+</Note>
+
+## Common Patterns
+
+<Accordion title="Every N seconds/minutes/hours">
+  ```typescript
+  // Every 10 seconds
+  cron.createTask('task1', '*/10 * * * * *', callback);
+  
+  // Every 5 minutes
+  cron.createTask('task2', '0 */5 * * * *', callback);
+  
+  // Every 2 hours
+  cron.createTask('task3', '0 0 */2 * * *', callback);
+  ```
+</Accordion>
+
+<Accordion title="Business hours tasks">
+  ```typescript
+  // Every 15 minutes from 6 AM to 11 PM
+  cron.createTask('business', '0 */15 6-23 * * *', callback);
+  
+  // Every hour during business hours (9 AM - 5 PM)
+  cron.createTask('business2', '0 0 9-17 * * MON-FRI', callback);
+  
+  // At 9 AM and 5 PM on weekdays
+  cron.createTask('business3', '0 0 9,17 * * 1-5', callback);
+  ```
+</Accordion>
+
+<Accordion title="Daily/Weekly/Monthly tasks">
+  ```typescript
+  // Daily at 8:30 AM
+  cron.createTask('daily', '0 30 8 * * *', callback);
+  
+  // Every Monday at 9 AM
+  cron.createTask('weekly', '0 0 9 * * MON', callback);
+  
+  // First day of every month at midnight
+  cron.createTask('monthly', '0 0 0 1 * *', callback);
+  
+  // Last day of every month at 11:59 PM
+  cron.createTask('monthEnd', '0 59 23 L * *', callback);
+  ```
+</Accordion>
+
+<Accordion title="Advanced schedules">
+  ```typescript
+  // Every quarter (Jan, Apr, Jul, Oct) at 1st day, 9 AM
+  cron.createTask('quarterly', '0 0 9 1 JAN,APR,JUL,OCT *', callback);
+  
+  // Last Friday of every month at 5 PM
+  cron.createTask('lastFriday', '0 0 17 * * 5L', callback);
+  
+  // Every weekday at 10 and 3
+  cron.createTask('weekday', '0 0 10,15 * * MON-FRI', callback);
+  ```
+</Accordion>
+
+## Complete Example
+
+```typescript
+import { JsCron, buildCronExpression } from '@kreisler/js-cron';
+
+// Create cron instance
+const cron = new JsCron({
+  timezone: 'America/New_York',
+  runOnInit: false
+});
+
+// Task 1: Health check every 30 seconds
+const healthCheck = cron.createTask(
+  'healthCheck',
+  '*/30 * * * * *',
+  () => {
+    console.log('Performing health check...');
+    // Check system health
+  }
+);
+
+// Task 2: Daily report at 9 AM on weekdays
+const dailyReportExpression = buildCronExpression({
+  minute: '0',
+  hour: '9',
+  dayOfWeek: 'MON-FRI'
+});
+
+const dailyReport = cron.createTask(
+  'dailyReport',
+  dailyReportExpression,
+  async () => {
+    console.log('Generating daily report...');
+    // Generate and send report
+  }
+);
+
+// Task 3: Database cleanup on first day of month
+const cleanup = cron.createTask(
+  'dbCleanup',
+  '0 0 2 1 * *', // 2 AM on 1st day of month
+  async () => {
+    console.log('Running database cleanup...');
+    // Cleanup logic
+  }
+);
+
+// Pause a task temporarily
+setTimeout(() => {
+  const result = cron.pauseTask('healthCheck');
+  console.log(result.message);
+  
+  // Resume after 1 minute
+  setTimeout(() => {
+    cron.resumeTask('healthCheck');
+  }, 60000);
+}, 120000);
+
+// List all tasks
+console.log(`Active tasks: ${cron.getTasks().size}`);
+
+// Graceful shutdown
+process.on('SIGINT', () => {
+  console.log('Stopping all tasks...');
+  
+  cron.getTasks().forEach((task, name) => {
+    cron.destroyTask(name);
+  });
+  
+  process.exit(0);
+});
+```
+
+## TypeScript Support
+
+Full TypeScript support with type definitions for all methods and interfaces:
+
+```typescript
+import type { 
+  ScheduleOptions, 
+  ScheduledTask,
+  CronFields 
+} from '@kreisler/js-cron';
+
+// Type-safe configuration
+const options: ScheduleOptions = {
+  timezone: 'America/Los_Angeles',
+  runOnInit: true
+};
+
+// Type-safe cron fields
+const fields: CronFields = {
+  second: '0',
+  minute: '*/15',
+  hour: '9-17',
+  dayOfWeek: 'MON-FRI'
+};
+```
+
+## Error Handling
+
+<Warning>
+  Always check the `success` property in the returned result objects:
+  
+  ```typescript
+  const result = cron.createTask('myTask', '* * * * * *', callback);
+  
+  if (!result.success) {
+    console.error('Failed to create task:', result.message);
+    // Handle error (invalid expression, duplicate name, etc.)
+  }
+  ```
+</Warning>
+
+Common error scenarios:
+- **Invalid cron expression**: The expression doesn't match the cron format
+- **Task already exists**: A task with the same name is already registered
+- **Task not found**: Attempting to operate on a non-existent task
+
+## Links
+
+- [GitHub Repository](https://github.com/itskreisler/pkgs)
+- [npm Package](https://www.npmjs.com/package/@kreisler/js-cron)
+- [node-cron Documentation](https://www.npmjs.com/package/node-cron)
+- [Report Issues](https://github.com/itskreisler/pkgs/issues)
+
+## License
+
+MIT © [Kreisler](https://linktr.ee/itskreisler)

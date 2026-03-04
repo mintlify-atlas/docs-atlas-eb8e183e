@@ -1,0 +1,446 @@
+---
+title: '@kreisler/dirname-for-module'
+description: 'Get __dirname equivalent for ES modules (import/export syntax)'
+---
+
+# @kreisler/dirname-for-module
+
+A lightweight utility that provides `__dirname` functionality for ES modules. When using ECMAScript modules (ESM) with `import`/`export` syntax, the global `__dirname` variable is not available. This package provides a drop-in replacement.
+
+## The Problem
+
+In CommonJS modules, `__dirname` is automatically available:
+
+```javascript
+// CommonJS (works)
+const path = require('path');
+const configPath = path.join(__dirname, 'config.json');
+```
+
+But in ES modules, `__dirname` is undefined:
+
+```javascript
+// ES Module (doesn't work!)
+import path from 'path';
+const configPath = path.join(__dirname, 'config.json'); // ❌ ReferenceError: __dirname is not defined
+```
+
+## The Solution
+
+This package exports a pre-calculated `__dirname` that works in ES modules:
+
+```javascript
+import { __dirname } from '@kreisler/dirname-for-module';
+import path from 'path';
+
+const configPath = path.join(__dirname, 'config.json'); // ✅ Works!
+```
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install @kreisler/dirname-for-module
+```
+
+```bash pnpm
+pnpm add @kreisler/dirname-for-module
+```
+
+```bash yarn
+yarn add @kreisler/dirname-for-module
+```
+</CodeGroup>
+
+## Usage
+
+### Basic Usage
+
+```typescript
+import { __dirname } from '@kreisler/dirname-for-module';
+
+console.log(__dirname);
+// Output: /home/user/my-project (your current directory)
+```
+
+### With Path Operations
+
+```typescript
+import { __dirname } from '@kreisler/dirname-for-module';
+import { join } from 'path';
+
+// Resolve paths relative to current directory
+const configPath = join(__dirname, 'config', 'app.json');
+const publicDir = join(__dirname, 'public');
+const dataFile = join(__dirname, '..', 'data', 'users.json');
+
+console.log(configPath); // /home/user/my-project/config/app.json
+```
+
+### Reading Files
+
+```typescript
+import { __dirname } from '@kreisler/dirname-for-module';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
+// Read a config file relative to current directory
+const configPath = join(__dirname, 'config.json');
+const config = JSON.parse(readFileSync(configPath, 'utf-8'));
+
+console.log(config);
+```
+
+### Dynamic Imports
+
+```typescript
+import { __dirname } from '@kreisler/dirname-for-module';
+import { join } from 'path';
+
+// Load modules relative to current directory
+const pluginPath = join(__dirname, 'plugins', 'my-plugin.js');
+const plugin = await import(pluginPath);
+
+plugin.initialize();
+```
+
+### Express.js Static Files
+
+```typescript
+import { __dirname } from '@kreisler/dirname-for-module';
+import express from 'express';
+import { join } from 'path';
+
+const app = express();
+
+// Serve static files from public directory
+app.use(express.static(join(__dirname, 'public')));
+
+// Set views directory for templates
+app.set('views', join(__dirname, 'views'));
+
+app.listen(3000);
+```
+
+### TypeScript Configuration
+
+```typescript
+import { __dirname } from '@kreisler/dirname-for-module';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
+// Load TypeScript config
+const tsconfigPath = join(__dirname, 'tsconfig.json');
+const tsconfig = JSON.parse(readFileSync(tsconfigPath, 'utf-8'));
+
+console.log(tsconfig.compilerOptions);
+```
+
+## How It Works
+
+Under the hood, the package uses Node.js built-in utilities to calculate the directory name:
+
+```typescript
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+// Convert import.meta.url to file path
+const __filename = fileURLToPath(import.meta.url);
+
+// Extract directory name
+export const __dirname = dirname(__filename);
+```
+
+The package also handles different module resolution strategies:
+- Regular `node_modules` installations
+- PNPM's unique content-addressable storage
+- Scoped packages (e.g., `@organization/package`)
+
+## Alternative: Manual Implementation
+
+If you prefer not to add a dependency, you can implement this yourself in any ES module file:
+
+```typescript
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Now use __dirname as normal
+console.log(__dirname);
+```
+
+<Note>
+  The advantage of using this package is that it handles edge cases with different package managers (especially PNPM) and module resolution strategies.
+</Note>
+
+## Common Use Cases
+
+<Accordion title="Loading Configuration Files">
+  ```typescript
+  import { __dirname } from '@kreisler/dirname-for-module';
+  import { readFileSync } from 'fs';
+  import { join } from 'path';
+  
+  const config = JSON.parse(
+    readFileSync(join(__dirname, 'config.json'), 'utf-8')
+  );
+  ```
+</Accordion>
+
+<Accordion title="File System Operations">
+  ```typescript
+  import { __dirname } from '@kreisler/dirname-for-module';
+  import { writeFileSync, mkdirSync } from 'fs';
+  import { join } from 'path';
+  
+  // Create output directory
+  const outputDir = join(__dirname, 'output');
+  mkdirSync(outputDir, { recursive: true });
+  
+  // Write file
+  const filePath = join(outputDir, 'result.json');
+  writeFileSync(filePath, JSON.stringify(data));
+  ```
+</Accordion>
+
+<Accordion title="Serving Static Assets">
+  ```typescript
+  import { __dirname } from '@kreisler/dirname-for-module';
+  import express from 'express';
+  import { join } from 'path';
+  
+  const app = express();
+  
+  app.use('/static', express.static(join(__dirname, 'public')));
+  app.use('/uploads', express.static(join(__dirname, 'uploads')));
+  ```
+</Accordion>
+
+<Accordion title="Template/View Paths">
+  ```typescript
+  import { __dirname } from '@kreisler/dirname-for-module';
+  import { join } from 'path';
+  
+  const templatePath = join(__dirname, 'templates', 'email.html');
+  const template = await readFile(templatePath, 'utf-8');
+  ```
+</Accordion>
+
+<Accordion title="Database Migrations">
+  ```typescript
+  import { __dirname } from '@kreisler/dirname-for-module';
+  import { join } from 'path';
+  
+  const migrationDir = join(__dirname, 'migrations');
+  const seedDir = join(__dirname, 'seeds');
+  
+  // Use with your migration tool
+  ```
+</Accordion>
+
+## TypeScript Support
+
+The package includes TypeScript definitions and works seamlessly with TypeScript projects:
+
+```typescript
+import { __dirname } from '@kreisler/dirname-for-module';
+
+// __dirname is typed as string
+const dir: string = __dirname;
+```
+
+### tsconfig.json
+
+Make sure your `tsconfig.json` is configured for ES modules:
+
+```json
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "target": "ES2020"
+  }
+}
+```
+
+### package.json
+
+Ensure your package is configured as an ES module:
+
+```json
+{
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts"
+}
+```
+
+## Comparison with Alternatives
+
+<Tabs>
+  <Tab title="This Package">
+    **Pros:**
+    - Simple one-line import
+    - Handles edge cases (PNPM, scoped packages)
+    - Zero configuration
+    - Minimal overhead
+    
+    **Cons:**
+    - Adds a small dependency
+    
+    ```typescript
+    import { __dirname } from '@kreisler/dirname-for-module';
+    ```
+  </Tab>
+  
+  <Tab title="Manual Implementation">
+    **Pros:**
+    - No dependencies
+    - Full control
+    
+    **Cons:**
+    - Need to add to every file
+    - May not handle all edge cases
+    
+    ```typescript
+    import { fileURLToPath } from 'url';
+    import { dirname } from 'path';
+    
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    ```
+  </Tab>
+  
+  <Tab title="import.meta.url">
+    **Pros:**
+    - Native ES module feature
+    - No dependencies
+    
+    **Cons:**
+    - Verbose
+    - Need to convert URL to path manually
+    
+    ```typescript
+    import { fileURLToPath } from 'url';
+    
+    const currentPath = fileURLToPath(import.meta.url);
+    // Still need to extract dirname
+    ```
+  </Tab>
+</Tabs>
+
+## Package Manager Compatibility
+
+This package is tested and works with:
+
+<Steps>
+  <Step title="npm">
+    Standard Node.js package manager
+    ```bash
+    npm install @kreisler/dirname-for-module
+    ```
+  </Step>
+  
+  <Step title="pnpm">
+    Fast, disk space efficient package manager
+    ```bash
+    pnpm add @kreisler/dirname-for-module
+    ```
+    
+    <Note>
+      The package includes special handling for PNPM's unique module resolution strategy.
+    </Note>
+  </Step>
+  
+  <Step title="Yarn">
+    Popular npm alternative
+    ```bash
+    yarn add @kreisler/dirname-for-module
+    ```
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<Warning>
+  **"Error [ERR_REQUIRE_ESM]: require() of ES Module not supported"**
+  
+  This error means you're trying to use `require()` with an ES module. Solutions:
+  
+  1. Add `"type": "module"` to your `package.json`
+  2. Use `.mjs` file extension
+  3. Use `import` instead of `require`
+</Warning>
+
+<Warning>
+  **"ReferenceError: __dirname is not defined"**
+  
+  Make sure you've imported the package:
+  
+  ```typescript
+  import { __dirname } from '@kreisler/dirname-for-module';
+  ```
+  
+  NOT:
+  
+  ```typescript
+  // ❌ This won't work
+  console.log(__dirname); // undefined
+  ```
+</Warning>
+
+## Migration Guide
+
+### From CommonJS to ES Modules
+
+**Before (CommonJS):**
+```javascript
+// index.js
+const path = require('path');
+const configPath = path.join(__dirname, 'config.json');
+```
+
+**After (ES Module):**
+```javascript
+// index.mjs or index.js with "type": "module"
+import { __dirname } from '@kreisler/dirname-for-module';
+import path from 'path';
+
+const configPath = path.join(__dirname, 'config.json');
+```
+
+## API Reference
+
+### Exports
+
+<ParamField path="__dirname" type="string">
+  The absolute path of the directory containing the module
+</ParamField>
+
+**Example:**
+```typescript
+import { __dirname } from '@kreisler/dirname-for-module';
+
+console.log(__dirname);
+// Output: /Users/username/projects/my-app
+```
+
+## Links
+
+- [GitHub Repository](https://github.com/itskreisler/dirname-for-module)
+- [npm Package](https://www.npmjs.com/package/@kreisler/dirname-for-module)
+- [Report Issues](https://github.com/itskreisler/dirname-for-module/issues)
+- [Node.js ES Modules Documentation](https://nodejs.org/api/esm.html)
+
+## Support
+
+If you find this package helpful, consider:
+
+- Starring the [GitHub repository](https://github.com/itskreisler/dirname-for-module)
+- [Buy me a coffee](https://www.buymeacoffee.com/kreisler) ☕
+
+## License
+
+MIT © [Kreisler](https://linktr.ee/itskreisler)

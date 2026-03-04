@@ -1,0 +1,337 @@
+---
+title: '@kreisler/exec-promise'
+description: 'Promise-based wrapper for Node.js child_process.exec'
+---
+
+# @kreisler/exec-promise
+
+A simple promise-based wrapper for Node.js `child_process.exec` that makes executing shell commands with async/await straightforward.
+
+## Installation
+
+```bash
+npm install @kreisler/exec-promise
+```
+
+## Core Function
+
+### execPromise
+
+Executes a shell command asynchronously and returns a promise that resolves with stdout and stderr.
+
+<ParamField path="comando" type="string" required>
+  The shell command to execute.
+</ParamField>
+
+<ResponseField name="return" type="Promise<{ stdout: string, stderr: string }>">
+  A promise that resolves with an object containing:
+  
+  <Expandable title="properties">
+    <ResponseField name="stdout" type="string">
+      Standard output from the command.
+    </ResponseField>
+    
+    <ResponseField name="stderr" type="string">
+      Standard error output from the command.
+    </ResponseField>
+  </Expandable>
+  
+  The promise rejects with an `ExecException` if the command fails.
+</ResponseField>
+
+## Type Definitions
+
+### Terror
+
+```typescript
+type Terror = ExecException | null
+```
+
+Type alias for execution errors from Node.js `child_process.exec`.
+
+## Usage Examples
+
+### Basic Command Execution
+
+```typescript
+import { execPromise } from '@kreisler/exec-promise'
+
+const { stdout, stderr } = await execPromise('echo "Hello World"')
+console.log(stdout) // "Hello World\n"
+console.log(stderr) // ""
+```
+
+### List Directory Contents
+
+```typescript
+import { execPromise } from '@kreisler/exec-promise'
+
+const { stdout } = await execPromise('ls -la')
+console.log(stdout)
+```
+
+### Git Commands
+
+```typescript
+import { execPromise } from '@kreisler/exec-promise'
+
+// Get current branch
+const { stdout: branch } = await execPromise('git branch --show-current')
+console.log('Current branch:', branch.trim())
+
+// Get commit hash
+const { stdout: hash } = await execPromise('git rev-parse HEAD')
+console.log('Commit hash:', hash.trim())
+
+// Check git status
+const { stdout: status } = await execPromise('git status --porcelain')
+if (status) {
+  console.log('Working directory has changes')
+} else {
+  console.log('Working directory is clean')
+}
+```
+
+### Node.js Version Check
+
+```typescript
+import { execPromise } from '@kreisler/exec-promise'
+
+const { stdout } = await execPromise('node --version')
+console.log('Node version:', stdout.trim())
+```
+
+### Environment Variables (Windows)
+
+```typescript
+import { execPromise } from '@kreisler/exec-promise'
+
+const { stdout } = await execPromise('echo %PATH%')
+console.log('PATH:', stdout)
+```
+
+### Environment Variables (Unix/Linux/Mac)
+
+```typescript
+import { execPromise } from '@kreisler/exec-promise'
+
+const { stdout } = await execPromise('echo $PATH')
+console.log('PATH:', stdout)
+```
+
+### Error Handling
+
+```typescript
+import { execPromise } from '@kreisler/exec-promise'
+
+try {
+  const { stdout, stderr } = await execPromise('invalid-command')
+  console.log(stdout)
+} catch (error) {
+  console.error('Command failed:', error.message)
+  console.error('Error code:', error.code)
+}
+```
+
+### Multiple Commands
+
+```typescript
+import { execPromise } from '@kreisler/exec-promise'
+
+// Chain commands with &&
+const { stdout } = await execPromise('cd /tmp && ls -la')
+console.log(stdout)
+
+// Run commands in sequence
+const { stdout: pwd } = await execPromise('pwd')
+const { stdout: files } = await execPromise('ls')
+console.log('Current directory:', pwd.trim())
+console.log('Files:', files)
+```
+
+### NPM Package Information
+
+```typescript
+import { execPromise } from '@kreisler/exec-promise'
+
+const { stdout } = await execPromise('npm list --depth=0 --json')
+const packages = JSON.parse(stdout)
+console.log('Installed packages:', packages.dependencies)
+```
+
+### System Information
+
+```typescript
+import { execPromise } from '@kreisler/exec-promise'
+
+const getSystemInfo = async () => {
+  const platform = process.platform
+  
+  if (platform === 'win32') {
+    const { stdout } = await execPromise('systeminfo | findstr /B /C:"OS Name" /C:"OS Version"')
+    return stdout
+  } else if (platform === 'darwin') {
+    const { stdout } = await execPromise('sw_vers')
+    return stdout
+  } else {
+    const { stdout } = await execPromise('uname -a')
+    return stdout
+  }
+}
+
+const info = await getSystemInfo()
+console.log('System info:', info)
+```
+
+### File Operations
+
+```typescript
+import { execPromise } from '@kreisler/exec-promise'
+
+// Create directory
+await execPromise('mkdir -p /tmp/myapp')
+
+// Copy files
+await execPromise('cp package.json /tmp/myapp/')
+
+// Check if file exists
+try {
+  await execPromise('test -f package.json && echo "exists"')
+  console.log('File exists')
+} catch {
+  console.log('File does not exist')
+}
+```
+
+### Build Process Integration
+
+```typescript
+import { execPromise } from '@kreisler/exec-promise'
+
+const runBuild = async () => {
+  console.log('Installing dependencies...')
+  await execPromise('npm install')
+  
+  console.log('Running linter...')
+  const { stdout: lintOutput } = await execPromise('npm run lint')
+  console.log(lintOutput)
+  
+  console.log('Running tests...')
+  const { stdout: testOutput } = await execPromise('npm test')
+  console.log(testOutput)
+  
+  console.log('Building project...')
+  const { stdout: buildOutput } = await execPromise('npm run build')
+  console.log(buildOutput)
+  
+  console.log('Build complete!')
+}
+
+try {
+  await runBuild()
+} catch (error) {
+  console.error('Build failed:', error.message)
+  process.exit(1)
+}
+```
+
+### Docker Commands
+
+```typescript
+import { execPromise } from '@kreisler/exec-promise'
+
+// List running containers
+const { stdout } = await execPromise('docker ps --format "{{.Names}}"')
+const containers = stdout.trim().split('\n').filter(Boolean)
+console.log('Running containers:', containers)
+
+// Build image
+await execPromise('docker build -t myapp:latest .')
+
+// Run container
+await execPromise('docker run -d -p 3000:3000 myapp:latest')
+```
+
+### Disk Usage Check
+
+```typescript
+import { execPromise } from '@kreisler/exec-promise'
+
+const checkDiskSpace = async () => {
+  const platform = process.platform
+  
+  if (platform === 'win32') {
+    const { stdout } = await execPromise('wmic logicaldisk get size,freespace,caption')
+    return stdout
+  } else {
+    const { stdout } = await execPromise('df -h')
+    return stdout
+  }
+}
+
+const diskInfo = await checkDiskSpace()
+console.log('Disk usage:', diskInfo)
+```
+
+### Process Management
+
+```typescript
+import { execPromise } from '@kreisler/exec-promise'
+
+// Find process by name (Unix/Linux/Mac)
+const { stdout } = await execPromise('ps aux | grep node')
+console.log('Node processes:', stdout)
+
+// Kill process by PID
+try {
+  await execPromise('kill -9 12345')
+  console.log('Process terminated')
+} catch (error) {
+  console.error('Failed to kill process:', error.message)
+}
+```
+
+## Error Handling
+
+The `execPromise` function rejects the promise if:
+
+- The command is not found
+- The command exits with a non-zero status code
+- The command execution times out
+- There's insufficient memory to execute the command
+
+```typescript
+import { execPromise } from '@kreisler/exec-promise'
+
+try {
+  await execPromise('non-existent-command')
+} catch (error) {
+  console.error('Error:', error.message)
+  console.error('Code:', error.code)
+  console.error('Signal:', error.signal)
+}
+```
+
+## Platform Differences
+
+Be aware of platform-specific command differences:
+
+- **Windows**: Use `dir` instead of `ls`, `del` instead of `rm`
+- **Unix/Linux/Mac**: Use POSIX-compliant commands
+- **Path separators**: Windows uses `\`, Unix uses `/`
+- **Environment variables**: Windows uses `%VAR%`, Unix uses `$VAR`
+
+## Limitations
+
+- Maximum buffer size for stdout/stderr is 200KB by default (Node.js limitation)
+- Commands run in a shell environment (potential security implications)
+- Not suitable for long-running processes (use `spawn` instead)
+- Cannot handle interactive commands that require user input
+
+## Best Practices
+
+- Always use try-catch for error handling
+- Sanitize user input before using it in commands
+- Consider using `child_process.spawn` for long-running processes
+- Use absolute paths when possible
+- Test commands on target platforms

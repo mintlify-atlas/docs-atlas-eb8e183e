@@ -1,0 +1,586 @@
+---
+title: "@kreisler/try-catch"
+description: "Functional try-catch wrappers for elegant error handling in JavaScript and TypeScript"
+---
+
+# @kreisler/try-catch
+
+A collection of functional utilities for elegant error handling without nested try-catch blocks. Simplify your error handling with clean, functional patterns.
+
+## Installation
+
+<CodeGroup>
+
+```bash npm
+npm install @kreisler/try-catch
+```
+
+```bash pnpm
+pnpm add @kreisler/try-catch
+```
+
+```bash yarn
+yarn add @kreisler/try-catch
+```
+
+</CodeGroup>
+
+## Overview
+
+Traditional try-catch blocks can make code harder to read and lead to nested structures. This package provides functional wrappers that return results in a predictable format, making error handling cleaner and more composable.
+
+<Note>
+All functions support both synchronous and asynchronous operations with full TypeScript support.
+</Note>
+
+## Exports
+
+The package exports four main functions:
+
+- `tryCatch` - Basic try-catch wrapper returning `[error, result]` tuple
+- `tryCatchPromise` - Async version of tryCatch for promises
+- `tryToCatch` - Try-catch with error transformation callback
+- `tryFinally` - Try-finally wrapper for cleanup operations
+- `tryCatchFinally` - Complete try-catch-finally wrapper
+
+## API Reference
+
+### tryCatch
+
+Synchronous try-catch wrapper that returns a tuple.
+
+```typescript
+function tryCatch<D, P extends any[]>(
+  fn: (...args: P) => D,
+  ...args: P
+): [null, D] | [Error]
+```
+
+<ParamField path="fn" type="Function" required>
+  The function to execute
+</ParamField>
+
+<ParamField path="args" type="...P">
+  Arguments to pass to the function
+</ParamField>
+
+**Returns:** `[null, result]` on success or `[Error]` on failure
+
+#### Example
+
+```typescript
+import { tryCatch } from '@kreisler/try-catch';
+
+// Success case
+const [error, result] = tryCatch(() => {
+  return 'Success!';
+});
+
+if (error) {
+  console.error(error.message);
+} else {
+  console.log(result); // 'Success!'
+}
+
+// Error case
+const [err, data] = tryCatch(() => {
+  throw new Error('Something went wrong');
+});
+
+if (err) {
+  console.error(err.message); // 'Something went wrong'
+}
+```
+
+### tryCatchPromise
+
+Asynchronous try-catch wrapper for promises and async functions.
+
+```typescript
+async function tryCatchPromise<D, P extends any[]>(
+  fn: (...args: P) => Promise<D> | D,
+  ...args: P
+): Promise<[null, D] | [Error]>
+```
+
+<ParamField path="fn" type="Function" required>
+  The async function or promise-returning function to execute
+</ParamField>
+
+<ParamField path="args" type="...P">
+  Arguments to pass to the function
+</ParamField>
+
+**Returns:** `Promise<[null, result] | [Error]>`
+
+#### Example
+
+```typescript
+import { tryCatchPromise } from '@kreisler/try-catch';
+
+// Fetch example
+const [error, response] = await tryCatchPromise(
+  fetch,
+  'https://jsonplaceholder.typicode.com/todos/1'
+);
+
+if (error) {
+  console.error('Fetch failed:', error.message);
+} else {
+  const data = await response.json();
+  console.log(data);
+}
+
+// Async function example
+const [err, user] = await tryCatchPromise(async (id) => {
+  const res = await fetch(`/api/users/${id}`);
+  return res.json();
+}, 123);
+
+if (err) {
+  console.error('Failed to fetch user:', err);
+} else {
+  console.log('User:', user);
+}
+```
+
+### tryToCatch
+
+Try-catch with error transformation callback.
+
+```typescript
+function tryToCatch<TTryResult, TCatchResult>(
+  tryFunction: () => TTryResult,
+  catchFunction: (ex: unknown) => TCatchResult
+): TTryResult | TCatchResult
+```
+
+<ParamField path="tryFunction" type="() => TTryResult" required>
+  The function to execute in the try block
+</ParamField>
+
+<ParamField path="catchFunction" type="(ex: unknown) => TCatchResult" required>
+  Function to handle errors and return a fallback value
+</ParamField>
+
+**Returns:** Either the successful result or the catch function's result
+
+#### Example
+
+```typescript
+import { tryToCatch } from '@kreisler/try-catch';
+
+// Return default value on error
+const result = tryToCatch(
+  () => {
+    return JSON.parse('{invalid json}');
+  },
+  (error) => {
+    console.error('Parse error:', error);
+    return {}; // Return default empty object
+  }
+);
+
+console.log(result); // {}
+
+// Re-throw with additional context
+const data = tryToCatch(
+  () => {
+    return riskyOperation();
+  },
+  (error) => {
+    throw new Error(`Operation failed: ${error.message}`);
+  }
+);
+```
+
+### tryFinally
+
+Try-finally wrapper for cleanup operations.
+
+```typescript
+function tryFinally<TTryResult>(
+  tryFunction: () => TTryResult,
+  finallyFunction: () => void
+): TTryResult | undefined
+```
+
+<ParamField path="tryFunction" type="() => TTryResult" required>
+  The function to execute in the try block
+</ParamField>
+
+<ParamField path="finallyFunction" type="() => void" required>
+  Cleanup function that always executes
+</ParamField>
+
+**Returns:** The result of tryFunction, or `undefined` if an error occurred
+
+#### Example
+
+```typescript
+import { tryFinally } from '@kreisler/try-catch';
+
+let resource = null;
+
+const result = tryFinally(
+  () => {
+    resource = acquireResource();
+    return processResource(resource);
+  },
+  () => {
+    // Cleanup always runs
+    if (resource) {
+      releaseResource(resource);
+    }
+  }
+);
+```
+
+### tryCatchFinally
+
+Complete try-catch-finally wrapper.
+
+```typescript
+function tryCatchFinally<TTryResult, TCatchResult>(
+  tryFunction: () => TTryResult,
+  catchFunction: (ex: unknown) => TCatchResult,
+  finallyFunction: () => void
+): TTryResult | TCatchResult
+```
+
+<ParamField path="tryFunction" type="() => TTryResult" required>
+  The function to execute in the try block
+</ParamField>
+
+<ParamField path="catchFunction" type="(ex: unknown) => TCatchResult" required>
+  Function to handle errors
+</ParamField>
+
+<ParamField path="finallyFunction" type="() => void" required>
+  Cleanup function that always executes
+</ParamField>
+
+**Returns:** Either the successful result or the catch function's result
+
+#### Example
+
+```typescript
+import { tryCatchFinally } from '@kreisler/try-catch';
+
+let connection = null;
+
+const result = tryCatchFinally(
+  () => {
+    connection = database.connect();
+    return connection.query('SELECT * FROM users');
+  },
+  (error) => {
+    console.error('Query failed:', error);
+    return []; // Return empty array on error
+  },
+  () => {
+    // Always cleanup
+    if (connection) {
+      connection.close();
+    }
+  }
+);
+```
+
+## Common Use Cases
+
+<Tabs>
+  <Tab title="API Calls">
+    ```typescript
+    import { tryCatchPromise } from '@kreisler/try-catch';
+
+    async function fetchUser(id: number) {
+      const [error, response] = await tryCatchPromise(
+        fetch,
+        `/api/users/${id}`
+      );
+
+      if (error) {
+        return { error: 'Failed to fetch user' };
+      }
+
+      const [parseError, user] = await tryCatchPromise(() => 
+        response.json()
+      );
+
+      if (parseError) {
+        return { error: 'Failed to parse response' };
+      }
+
+      return { user };
+    }
+    ```
+  </Tab>
+  
+  <Tab title="JSON Parsing">
+    ```typescript
+    import { tryToCatch } from '@kreisler/try-catch';
+
+    function safeJSONParse(text: string, defaultValue = null) {
+      return tryToCatch(
+        () => JSON.parse(text),
+        (error) => {
+          console.warn('Invalid JSON:', error);
+          return defaultValue;
+        }
+      );
+    }
+
+    const data = safeJSONParse(userInput, {});
+    ```
+  </Tab>
+  
+  <Tab title="File Operations">
+    ```typescript
+    import { tryCatchFinally } from '@kreisler/try-catch';
+    import { open } from 'fs/promises';
+
+    async function readConfig(path: string) {
+      let fileHandle = null;
+
+      return await tryCatchFinally(
+        async () => {
+          fileHandle = await open(path, 'r');
+          const content = await fileHandle.readFile('utf-8');
+          return JSON.parse(content);
+        },
+        (error) => {
+          console.error('Failed to read config:', error);
+          return {}; // Default config
+        },
+        async () => {
+          if (fileHandle) {
+            await fileHandle.close();
+          }
+        }
+      );
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Form Validation">
+    ```typescript
+    import { tryCatch } from '@kreisler/try-catch';
+
+    function validateEmail(email: string): boolean {
+      const [error] = tryCatch(() => {
+        if (!email.includes('@')) {
+          throw new Error('Invalid email');
+        }
+        // More validation...
+      });
+
+      return !error;
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Patterns and Best Practices
+
+<Steps>
+
+<Step title="Destructure Results Consistently">
+  Always destructure the tuple for clarity:
+  ```typescript
+  const [error, result] = tryCatch(() => operation());
+  ```
+</Step>
+
+<Step title="Check Errors First">
+  Handle errors before accessing results:
+  ```typescript
+  const [error, data] = await tryCatchPromise(fetchData);
+  if (error) {
+    return handleError(error);
+  }
+  // Safe to use data here
+  ```
+</Step>
+
+<Step title="Chain Multiple Operations">
+  Combine functions for sequential error handling:
+  ```typescript
+  const [err1, data1] = await tryCatchPromise(fetchUser, id);
+  if (err1) return;
+  
+  const [err2, data2] = await tryCatchPromise(fetchPosts, data1.userId);
+  if (err2) return;
+  ```
+</Step>
+
+<Step title="Use Type Guards">
+  TypeScript will narrow types after error checks:
+  ```typescript
+  const [error, result] = tryCatch<User>(() => getUser());
+  if (error) {
+    // error is Error
+    console.error(error.message);
+    return;
+  }
+  // result is User (not undefined)
+  console.log(result.name);
+  ```
+</Step>
+
+</Steps>
+
+## Comparison with Traditional Try-Catch
+
+<CodeGroup>
+
+```typescript Traditional
+try {
+  const response = await fetch('/api/data');
+  try {
+    const data = await response.json();
+    try {
+      const processed = processData(data);
+      return processed;
+    } catch (processError) {
+      console.error('Process error:', processError);
+      return null;
+    }
+  } catch (parseError) {
+    console.error('Parse error:', parseError);
+    return null;
+  }
+} catch (fetchError) {
+  console.error('Fetch error:', fetchError);
+  return null;
+}
+```
+
+```typescript With @kreisler/try-catch
+import { tryCatchPromise, tryCatch } from '@kreisler/try-catch';
+
+const [fetchError, response] = await tryCatchPromise(fetch, '/api/data');
+if (fetchError) {
+  console.error('Fetch error:', fetchError);
+  return null;
+}
+
+const [parseError, data] = await tryCatchPromise(() => response.json());
+if (parseError) {
+  console.error('Parse error:', parseError);
+  return null;
+}
+
+const [processError, processed] = tryCatch(processData, data);
+if (processError) {
+  console.error('Process error:', processError);
+  return null;
+}
+
+return processed;
+```
+
+</CodeGroup>
+
+<Note>
+The functional approach eliminates nesting and makes the error handling flow more explicit and linear.
+</Note>
+
+## Advanced Examples
+
+### Multiple API Calls with Error Handling
+
+```typescript
+import { tryCatchPromise } from '@kreisler/try-catch';
+
+async function getUserWithPosts(userId: number) {
+  const [userError, userResponse] = await tryCatchPromise(
+    fetch,
+    `/api/users/${userId}`
+  );
+
+  if (userError) {
+    return { error: 'Failed to fetch user', user: null, posts: [] };
+  }
+
+  const [parseError, user] = await tryCatchPromise(() => userResponse.json());
+
+  if (parseError) {
+    return { error: 'Failed to parse user', user: null, posts: [] };
+  }
+
+  const [postsError, postsResponse] = await tryCatchPromise(
+    fetch,
+    `/api/users/${userId}/posts`
+  );
+
+  if (postsError) {
+    return { error: null, user, posts: [] }; // User succeeded, posts failed
+  }
+
+  const [postsParseError, posts] = await tryCatchPromise(() => 
+    postsResponse.json()
+  );
+
+  return {
+    error: postsParseError ? 'Failed to parse posts' : null,
+    user,
+    posts: postsParseError ? [] : posts
+  };
+}
+```
+
+### Custom Error Types
+
+```typescript
+import { tryToCatch } from '@kreisler/try-catch';
+
+class ValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ValidationError';
+  }
+}
+
+function validateAndProcess(data: unknown) {
+  return tryToCatch(
+    () => {
+      if (!data) {
+        throw new ValidationError('Data is required');
+      }
+      return processData(data);
+    },
+    (error) => {
+      if (error instanceof ValidationError) {
+        console.error('Validation failed:', error.message);
+        return null;
+      }
+      throw error; // Re-throw unexpected errors
+    }
+  );
+}
+```
+
+## Type Exports
+
+```typescript
+import type { 
+  Tfn,
+  TtryCatch,
+  TtryCatchPromise 
+} from '@kreisler/try-catch';
+
+// Tfn: (...args: any[]) => any
+// TtryCatch: [error: Error | null | unknown, result?: any]
+// TtryCatchPromise: Promise<TtryCatch>
+```
+
+## License
+
+MIT License - see the [LICENSE](https://github.com/itskreisler/pkgs/blob/master/LICENSE) file for details.
+
+## Links
+
+- [GitHub Repository](https://github.com/itskreisler/pkgs)
+- [Package Homepage](https://github.com/itskreisler/pkgs/tree/master/packages/try-catch#readme)
+- [Report Issues](https://github.com/itskreisler/pkgs/issues)

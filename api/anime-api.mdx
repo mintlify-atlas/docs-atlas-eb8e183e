@@ -1,0 +1,911 @@
+---
+title: '@kreisler/anime-api'
+description: 'Complete API reference for the anime information scraping library'
+---
+
+## Overview
+
+`@kreisler/anime-api` is a comprehensive TypeScript library for scraping anime information from AnimeFLV and integrating with Jikan (MyAnimeList) API. It provides methods to search, browse, and retrieve detailed anime information including episodes, characters, and download links.
+
+**Package**: `@kreisler/anime-api`  
+**Version**: `2.0.0`  
+**License**: MIT
+
+## Installation
+
+```bash
+npm install @kreisler/anime-api
+```
+
+## Quick Start
+
+```typescript
+import {
+  search,
+  getAnimeInfo,
+  latestAnimeAdded,
+  latestEpisodesAdded
+} from '@kreisler/anime-api';
+
+// Search for anime
+const results = await search('tokyo ghoul');
+
+// Get anime details
+const info = await getAnimeInfo('anime/5226/tokyo-ghoul', 'Tokyo Ghoul');
+
+// Get latest episodes
+const episodes = await latestEpisodesAdded();
+```
+
+---
+
+## Core Functions
+
+### search()
+
+Searches for anime by query string.
+
+<ParamField path="query" type="string" required>
+  Search query (anime title or keywords).
+</ParamField>
+
+<ResponseField name="return" type="Promise<AnimeSearchResult[]>">
+  Array of anime search results.
+  
+  <Expandable title="AnimeSearchResult properties">
+    <ResponseField name="id" type="string | null">
+      Anime ID (e.g., "anime/5226/tokyo-ghoul").
+    </ResponseField>
+    <ResponseField name="title" type="string | null">
+      Anime title.
+    </ResponseField>
+    <ResponseField name="poster" type="string | null">
+      Anime poster image in base64 format.
+    </ResponseField>
+    <ResponseField name="banner" type="string | null">
+      Anime banner image URL.
+    </ResponseField>
+    <ResponseField name="synopsis" type="string | null">
+      Anime synopsis/description.
+    </ResponseField>
+    <ResponseField name="debut" type="string | null">
+      Debut/release date.
+    </ResponseField>
+    <ResponseField name="type" type="string | null">
+      Anime type (TV, Movie, OVA, etc.).
+    </ResponseField>
+    <ResponseField name="rating" type="string | null">
+      User rating.
+    </ResponseField>
+    <ResponseField name="genres" type="string[] | null">
+      Array of genre names.
+    </ResponseField>
+    <ResponseField name="episodes" type="AnimeEpisode[] | null">
+      List of episodes with IDs and previews.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+```typescript
+const results = await search('naruto');
+
+results.forEach(anime => {
+  console.log(`${anime.title} - ${anime.type}`);
+  console.log(`Episodes: ${anime.episodes?.length}`);
+});
+```
+
+### getAnimeInfo()
+
+Retrieves detailed information about a specific anime.
+
+<ParamField path="id" type="string" required>
+  Anime ID from AnimeFLV (e.g., "anime/5226/tokyo-ghoul").
+</ParamField>
+
+<ParamField path="title" type="string" required>
+  Anime title for fetching additional info from Jikan.
+</ParamField>
+
+<ResponseField name="return" type="Promise<AnimeDetailedInfo[]>">
+  Array containing detailed anime information.
+  
+  <Expandable title="AnimeDetailedInfo properties">
+    <ResponseField name="id" type="string | null">
+      Anime ID.
+    </ResponseField>
+    <ResponseField name="title" type="string | null">
+      Anime title.
+    </ResponseField>
+    <ResponseField name="poster" type="string | null">
+      Poster image in base64.
+    </ResponseField>
+    <ResponseField name="banner" type="string | null">
+      Banner image URL.
+    </ResponseField>
+    <ResponseField name="synopsis" type="string | null">
+      Full synopsis.
+    </ResponseField>
+    <ResponseField name="debut" type="string | null">
+      Release date.
+    </ResponseField>
+    <ResponseField name="type" type="string | null">
+      Anime type.
+    </ResponseField>
+    <ResponseField name="rating" type="string | null">
+      User rating.
+    </ResponseField>
+    <ResponseField name="genres" type="string[] | null">
+      Genre list.
+    </ResponseField>
+    <ResponseField name="episodes" type="AnimeEpisode[] | null">
+      Episode list.
+    </ResponseField>
+    <ResponseField name="moreInfo" type="AnimeExtraInfo | null">
+      Additional information from MyAnimeList.
+    </ResponseField>
+    <ResponseField name="promoList" type="PromoVideo[] | null">
+      Promotional videos.
+    </ResponseField>
+    <ResponseField name="charactersList" type="Character[] | null">
+      List of characters and voice actors.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+```typescript
+const [anime] = await getAnimeInfo(
+  'anime/5226/tokyo-ghoul',
+  'Tokyo Ghoul'
+);
+
+console.log('Title:', anime.title);
+console.log('Synopsis:', anime.synopsis);
+console.log('Episodes:', anime.episodes?.length);
+console.log('Characters:', anime.charactersList?.length);
+```
+
+### latestAnimeAdded()
+
+Retrieves the latest anime added to AnimeFLV.
+
+<ResponseField name="return" type="Promise<AnimeSearchResult[]>">
+  Array of recently added anime.
+</ResponseField>
+
+```typescript
+const latest = await latestAnimeAdded();
+
+console.log('Latest anime:');
+latest.forEach(anime => {
+  console.log(`- ${anime.title} (${anime.type})`);
+});
+```
+
+### latestEpisodesAdded()
+
+Retrieves the latest episodes added to AnimeFLV.
+
+<ResponseField name="return" type="Promise<LatestEpisode[]>">
+  Array of recently added episodes.
+  
+  <Expandable title="LatestEpisode properties">
+    <ResponseField name="id" type="string | null">
+      Episode ID (e.g., "ver/5226/tokyo-ghoul-1").
+    </ResponseField>
+    <ResponseField name="title" type="string | null">
+      Anime title.
+    </ResponseField>
+    <ResponseField name="poster" type="string | null">
+      Episode thumbnail in base64.
+    </ResponseField>
+    <ResponseField name="episode" type="number | null">
+      Episode number.
+    </ResponseField>
+    <ResponseField name="servers" type="ServerInfo[]">
+      Available streaming servers for the episode.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+```typescript
+const episodes = await latestEpisodesAdded();
+
+episodes.forEach(ep => {
+  console.log(`${ep.title} - Episode ${ep.episode}`);
+  console.log(`Servers: ${ep.servers?.length}`);
+});
+```
+
+### getAnimeServers()
+
+Retrieves streaming server information for a specific episode.
+
+<ParamField path="id" type="string" required>
+  Episode ID (e.g., "ver/5226/tokyo-ghoul-1").
+</ParamField>
+
+<ResponseField name="return" type="Promise<IServersData[]>">
+  Array of available servers.
+  
+  <Expandable title="IServersData properties">
+    <ResponseField name="server" type="string">
+      Server name (e.g., "Fembed", "Mega", "Okru").
+    </ResponseField>
+    <ResponseField name="title" type="string">
+      Server display title.
+    </ResponseField>
+    <ResponseField name="ads" type="number">
+      Number of ads (0-3).
+    </ResponseField>
+    <ResponseField name="url" type="string">
+      Optional direct URL to the video.
+    </ResponseField>
+    <ResponseField name="allow_mobile" type="boolean">
+      Whether the server works on mobile.
+    </ResponseField>
+    <ResponseField name="code" type="string">
+      Embed code or stream URL.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+```typescript
+const servers = await getAnimeServers('ver/5226/tokyo-ghoul-1');
+
+servers.forEach(server => {
+  console.log(`${server.server}: ${server.code}`);
+  console.log(`Ads: ${server.ads}, Mobile: ${server.allow_mobile}`);
+});
+```
+
+### downloadLinksByEpsId()
+
+Retrieves download links for a specific episode.
+
+<ParamField path="id" type="string" required>
+  Episode ID.
+</ParamField>
+
+<ResponseField name="return" type="Promise<IDownloadLinksByEpsId[]>">
+  Array of download links.
+  
+  <Expandable title="IDownloadLinksByEpsId properties">
+    <ResponseField name="server" type="string">
+      Server/host name (e.g., "Mega", "MediaFire").
+    </ResponseField>
+    <ResponseField name="url" type="string">
+      Direct download URL.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+```typescript
+const downloads = await downloadLinksByEpsId('ver/5226/tokyo-ghoul-1');
+
+downloads.forEach(link => {
+  console.log(`${link.server}: ${link.url}`);
+});
+```
+
+---
+
+## Browse Functions
+
+### tv()
+
+Browses TV anime with pagination and sorting.
+
+<ParamField path="order" type="'updated' | 'added'" required>
+  Sort order (by update date or added date).
+</ParamField>
+
+<ParamField path="page" type="string" required>
+  Page number as string (e.g., "1", "2").
+</ParamField>
+
+<ResponseField name="return" type="Promise<AnimeSearchResult[]>">
+  Array of TV anime.
+</ResponseField>
+
+```typescript
+const tvAnime = await tv('updated', '1');
+console.log(`Found ${tvAnime.length} TV anime`);
+```
+
+### movies()
+
+Browses anime movies.
+
+<ParamField path="order" type="'updated' | 'added'" required>
+  Sort order.
+</ParamField>
+
+<ParamField path="page" type="string" required>
+  Page number.
+</ParamField>
+
+<ResponseField name="return" type="Promise<AnimeSearchResult[]>">
+  Array of anime movies.
+</ResponseField>
+
+```typescript
+const movieList = await movies('added', '1');
+```
+
+### ova()
+
+Browses OVA anime.
+
+<ParamField path="order" type="'updated' | 'added'" required>
+  Sort order.
+</ParamField>
+
+<ParamField path="page" type="string" required>
+  Page number.
+</ParamField>
+
+<ResponseField name="return" type="Promise<AnimeSearchResult[]>">
+  Array of OVA anime.
+</ResponseField>
+
+```typescript
+const ovaList = await ova('updated', '1');
+```
+
+### special()
+
+Browses special episodes and anime.
+
+<ParamField path="order" type="'updated' | 'added'" required>
+  Sort order.
+</ParamField>
+
+<ParamField path="page" type="string" required>
+  Page number.
+</ParamField>
+
+<ResponseField name="return" type="Promise<AnimeSearchResult[]>">
+  Array of special anime.
+</ResponseField>
+
+```typescript
+const specials = await special('added', '1');
+```
+
+### animeByState()
+
+Browses anime filtered by airing status.
+
+<ParamField path="state" type="number" required>
+  Status code (1 = Currently Airing, 2 = Finished Airing, 3 = Not Yet Aired).
+</ParamField>
+
+<ParamField path="order" type="'updated' | 'added'" required>
+  Sort order.
+</ParamField>
+
+<ParamField path="page" type="string" required>
+  Page number.
+</ParamField>
+
+<ResponseField name="return" type="Promise<AnimeSearchResult[]>">
+  Array of anime matching the status.
+</ResponseField>
+
+```typescript
+// Get currently airing anime
+const airing = await animeByState(1, 'updated', '1');
+
+// Get finished anime
+const finished = await animeByState(2, 'updated', '1');
+```
+
+### animeByGenres()
+
+Browses anime filtered by genre.
+
+<ParamField path="genre" type="string" required>
+  Genre slug (e.g., 'comedia', 'accion', 'romance').
+</ParamField>
+
+<ParamField path="order" type="'updated' | 'added'" required>
+  Sort order.
+</ParamField>
+
+<ParamField path="page" type="string" required>
+  Page number.
+</ParamField>
+
+<ResponseField name="return" type="Promise<AnimeSearchResult[]>">
+  Array of anime in the specified genre.
+</ResponseField>
+
+```typescript
+const comedyAnime = await animeByGenres('comedia', 'updated', '1');
+const actionAnime = await animeByGenres('accion', 'added', '1');
+```
+
+---
+
+## Additional Information Functions
+
+### getAnimeVideoPromo()
+
+Retrieves promotional videos for an anime from MyAnimeList.
+
+<ParamField path="title" type="string" required>
+  Anime title to search on MyAnimeList.
+</ParamField>
+
+<ResponseField name="return" type="Promise<PromoVideo[] | null>">
+  Array of promotional videos or null if not found.
+  
+  <Expandable title="PromoVideo properties">
+    <ResponseField name="title" type="string">
+      Video title.
+    </ResponseField>
+    <ResponseField name="previewImage" type="string">
+      Thumbnail image URL.
+    </ResponseField>
+    <ResponseField name="videoURL" type="string">
+      YouTube video URL.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+```typescript
+const promos = await getAnimeVideoPromo('Tokyo Ghoul');
+
+if (promos) {
+  promos.forEach(promo => {
+    console.log(`${promo.title}: ${promo.videoURL}`);
+  });
+}
+```
+
+### getAnimeCharacters()
+
+Retrieves character information from MyAnimeList.
+
+<ParamField path="title" type="string" required>
+  Anime title.
+</ParamField>
+
+<ResponseField name="return" type="Promise<Character[] | null>">
+  Array of characters or null if not found.
+  
+  <Expandable title="Character properties">
+    <ResponseField name="character" type="object">
+      Character information object.
+      
+      <Expandable title="character properties">
+        <ResponseField name="id" type="number">
+          MyAnimeList character ID.
+        </ResponseField>
+        <ResponseField name="name" type="string">
+          Character name.
+        </ResponseField>
+        <ResponseField name="image" type="string">
+          Character image URL.
+        </ResponseField>
+        <ResponseField name="role" type="string">
+          Character role (Main, Supporting, etc.).
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+```typescript
+const characters = await getAnimeCharacters('Tokyo Ghoul');
+
+if (characters) {
+  characters.forEach(({ character }) => {
+    console.log(`${character.name} (${character.role})`);
+  });
+}
+```
+
+---
+
+## Interfaces
+
+### AnimeEpisode
+
+Represents an anime episode.
+
+<ResponseField name="episode" type="string">
+  Episode number.
+</ResponseField>
+
+<ResponseField name="id" type="string">
+  Episode ID for streaming/downloading.
+</ResponseField>
+
+<ResponseField name="imagePreview" type="string">
+  Episode thumbnail URL.
+</ResponseField>
+
+<ResponseField name="nextEpisodeDate" type="string">
+  Release date of next episode (for ongoing anime).
+</ResponseField>
+
+### AnimeExtraInfo
+
+Additional anime information from MyAnimeList.
+
+<ResponseField name="titleJapanese" type="string">
+  Japanese title.
+</ResponseField>
+
+<ResponseField name="source" type="string">
+  Source material (Manga, Light Novel, Original, etc.).
+</ResponseField>
+
+<ResponseField name="totalEpisodes" type="number">
+  Total number of episodes.
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Airing status.
+</ResponseField>
+
+<ResponseField name="aired" type="object">
+  Airing dates.
+  
+  <Expandable title="aired properties">
+    <ResponseField name="from" type="string">
+      Start date.
+    </ResponseField>
+    <ResponseField name="to" type="string">
+      End date.
+    </ResponseField>
+    <ResponseField name="string" type="string">
+      Human-readable date range.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="duration" type="string">
+  Episode duration.
+</ResponseField>
+
+<ResponseField name="rank" type="number">
+  MyAnimeList rank.
+</ResponseField>
+
+<ResponseField name="popularity" type="number">
+  Popularity rank.
+</ResponseField>
+
+<ResponseField name="members" type="number">
+  Number of members who added it.
+</ResponseField>
+
+<ResponseField name="favorites" type="number">
+  Number of users who favorited it.
+</ResponseField>
+
+<ResponseField name="premiered" type="string">
+  Premiere season and year.
+</ResponseField>
+
+<ResponseField name="broadcast" type="string">
+  Broadcast time.
+</ResponseField>
+
+<ResponseField name="producers" type="object">
+  Production companies.
+  <Expandable title="producers properties">
+    <ResponseField name="names" type="string[]">
+      Array of producer names.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="licensors" type="object">
+  Licensing companies.
+  <Expandable title="licensors properties">
+    <ResponseField name="names" type="string[]">
+      Array of licensor names.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="studios" type="object">
+  Animation studios.
+  <Expandable title="studios properties">
+    <ResponseField name="names" type="string[]">
+      Array of studio names.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="openingThemes" type="string[]">
+  Opening theme songs.
+</ResponseField>
+
+<ResponseField name="endingThemes" type="string[]">
+  Ending theme songs.
+</ResponseField>
+
+### IFlvFiltros
+
+Filter options for browsing anime.
+
+<ResponseField name="genre[]" type="string">
+  Genre filter (e.g., 'comedia', 'accion').
+</ResponseField>
+
+<ResponseField name="year[]" type="number">
+  Year filter.
+</ResponseField>
+
+<ResponseField name="type[]" type="'tv' | 'movie'">
+  Type filter.
+</ResponseField>
+
+<ResponseField name="status[]" type="number">
+  Status filter (1-3).
+</ResponseField>
+
+<ResponseField name="order" type="'updated' | 'added'">
+  Sort order.
+</ResponseField>
+
+<ResponseField name="page" type="string">
+  Page number.
+</ResponseField>
+
+---
+
+## Usage Examples
+
+### Search and Display Anime
+
+```typescript
+import { search } from '@kreisler/anime-api';
+
+const query = 'one piece';
+const results = await search(query);
+
+results.forEach(anime => {
+  console.log('\n---');
+  console.log('Title:', anime.title);
+  console.log('Type:', anime.type);
+  console.log('Rating:', anime.rating);
+  console.log('Genres:', anime.genres?.join(', '));
+  console.log('Episodes:', anime.episodes?.length);
+});
+```
+
+### Get Complete Anime Information
+
+```typescript
+import { search, getAnimeInfo } from '@kreisler/anime-api';
+
+// First search for the anime
+const [result] = await search('death note');
+
+if (result) {
+  // Then get detailed information
+  const [details] = await getAnimeInfo(result.id!, result.title!);
+  
+  console.log('Title:', details.title);
+  console.log('Synopsis:', details.synopsis);
+  console.log('\nExtra Info from MyAnimeList:');
+  console.log('Japanese Title:', details.moreInfo?.titleJapanese);
+  console.log('Total Episodes:', details.moreInfo?.totalEpisodes);
+  console.log('Status:', details.moreInfo?.status);
+  console.log('Rank:', details.moreInfo?.rank);
+  console.log('Studios:', details.moreInfo?.studios?.names.join(', '));
+  
+  console.log('\nCharacters:');
+  details.charactersList?.slice(0, 5).forEach(({ character }) => {
+    console.log(`- ${character.name} (${character.role})`);
+  });
+}
+```
+
+### Browse Latest Episodes
+
+```typescript
+import { latestEpisodesAdded, getAnimeServers } from '@kreisler/anime-api';
+
+const episodes = await latestEpisodesAdded();
+
+console.log('Latest Episodes:');
+
+for (const ep of episodes.slice(0, 5)) {
+  console.log(`\n${ep.title} - Episode ${ep.episode}`);
+  
+  // Get available servers
+  if (ep.id) {
+    const servers = await getAnimeServers(ep.id);
+    console.log('Available servers:', servers.map(s => s.server).join(', '));
+  }
+}
+```
+
+### Filter by Genre and Status
+
+```typescript
+import { animeByGenres, animeByState } from '@kreisler/anime-api';
+
+// Get currently airing action anime
+const airingAction = await animeByGenres('accion', 'updated', '1');
+
+console.log('Currently Airing Action Anime:');
+airingAction.forEach(anime => {
+  console.log(`- ${anime.title}`);
+});
+
+// Get finished comedy anime
+const finishedComedy = await animeByState(2, 'updated', '1');
+console.log('\nFinished Anime:');
+finishedComedy.slice(0, 10).forEach(anime => {
+  console.log(`- ${anime.title}`);
+});
+```
+
+### Download Episode Links
+
+```typescript
+import {
+  latestEpisodesAdded,
+  downloadLinksByEpsId
+} from '@kreisler/anime-api';
+
+const [episode] = await latestEpisodesAdded();
+
+if (episode.id) {
+  const downloads = await downloadLinksByEpsId(episode.id);
+  
+  console.log(`Download links for ${episode.title} - Episode ${episode.episode}:`);
+  downloads.forEach(link => {
+    console.log(`${link.server}: ${link.url}`);
+  });
+}
+```
+
+### Build a Complete Anime Database
+
+```typescript
+import {
+  tv,
+  movies,
+  ova,
+  getAnimeInfo
+} from '@kreisler/anime-api';
+
+const database = [];
+
+// Get TV anime from multiple pages
+for (let page = 1; page <= 3; page++) {
+  const anime = await tv('updated', String(page));
+  database.push(...anime);
+}
+
+// Get movies
+const movieList = await movies('updated', '1');
+database.push(...movieList);
+
+// Get OVAs
+const ovaList = await ova('updated', '1');
+database.push(...ovaList);
+
+console.log(`Total anime in database: ${database.length}`);
+
+// Get detailed info for each
+for (const anime of database.slice(0, 5)) {
+  const [details] = await getAnimeInfo(anime.id!, anime.title!);
+  console.log(`Processed: ${details.title}`);
+}
+```
+
+---
+
+## Helper Utilities
+
+### imageUrlToBase64()
+
+Internal utility that converts image URLs to base64 format.
+
+<ParamField path="url" type="string" required>
+  Image URL to convert.
+</ParamField>
+
+<ResponseField name="return" type="Promise<string>">
+  Base64 encoded image string.
+</ResponseField>
+
+---
+
+## Constants
+
+### URLS
+
+Object containing all API endpoints.
+
+<ResponseField name="BASE_URL" type="string">
+  AnimeFLV base URL.
+</ResponseField>
+
+<ResponseField name="SEARCH_URL" type="string">
+  Search endpoint.
+</ResponseField>
+
+<ResponseField name="BROWSE_URL" type="string">
+  Browse/filter endpoint.
+</ResponseField>
+
+<ResponseField name="ANIME_VIDEO_URL" type="string">
+  Video/episode endpoint.
+</ResponseField>
+
+<ResponseField name="BASE_EPISODE_IMG_URL" type="string">
+  Episode thumbnail base URL.
+</ResponseField>
+
+<ResponseField name="BASE_JIKA_URL" type="string">
+  Jikan API search endpoint.
+</ResponseField>
+
+<ResponseField name="BASE_JIKA_API" type="string">
+  Jikan API base URL.
+</ResponseField>
+
+---
+
+## Error Handling
+
+All functions handle errors gracefully and return `null` or empty arrays when data cannot be fetched:
+
+```typescript
+try {
+  const results = await search('nonexistent anime');
+  if (results.length === 0) {
+    console.log('No results found');
+  }
+} catch (error) {
+  console.error('Search failed:', error);
+}
+```
+
+---
+
+## Rate Limiting
+
+Be mindful of rate limits when making multiple requests:
+
+```typescript
+// Add delays between requests
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+for (const anime of animeList) {
+  const info = await getAnimeInfo(anime.id, anime.title);
+  await delay(1000); // Wait 1 second between requests
+}
+```
+
+---
+
+## Dependencies
+
+- `cheerio` - HTML parsing and scraping
+- `cheerio-tableparser` - Table parsing for download links
+- `cloudscraper` - HTTP client with Cloudflare bypass
+- `urldecode` - URL decoding utilities
+- `image-to-base64` - Image conversion
+
+---
+
+## Links
+
+- [GitHub Repository](https://github.com/itskreisler/pkgs)
+- [NPM Package](https://www.npmjs.com/package/@kreisler/anime-api)
+- [AnimeFLV](https://www3.animeflv.net/)
+- [Jikan API](https://jikan.moe/)
+- [Report Issues](https://github.com/itskreisler/pkgs/issues)
+- [Support](https://www.buymeacoffee.com/kreisler)

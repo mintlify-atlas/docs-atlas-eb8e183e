@@ -1,80 +1,484 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Get started with Kreisler packages by exploring practical examples from the most popular utilities
 ---
 
-## Get started in three steps
+This guide will help you get up and running with the most popular Kreisler packages. Each example uses real code from the package source and tests.
 
-Get your documentation site running locally and make your first customization.
+<Note>
+  Make sure you've [installed](/installation) the packages you want to use before following these examples.
+</Note>
 
-### Step 1: Set up your local environment
+## Creating API clients
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+The `@kreisler/createapi` package provides a unique proxy-based approach to making HTTP requests without defining endpoints upfront.
+
+<Steps>
+  <Step title="Install the package">
+    ```bash
+    npm install @kreisler/createapi
+    ```
+  </Step>
+  
+  <Step title="Create an API client">
+    Import and create your API client:
     
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
+    ```javascript
+    import { createApi } from '@kreisler/createapi'
     
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
+    // Create a client for any API
+    const api = createApi('https://api.adviceslip.com')
+    ```
+  </Step>
+  
+  <Step title="Make requests">
+    Access endpoints dynamically through property access:
     
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    ```javascript
+    // GET https://api.adviceslip.com/advice
+    const response = await api.advice()
+    console.log(response.slip.advice)
+    // Output: "If you want to be happily married, marry a happy person."
+    ```
+  </Step>
+</Steps>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+### Advanced API usage
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+<CodeGroup>
+```javascript Query Parameters
+// Pass query parameters as an object
+const api = createApi('https://nekobot.xyz/api')
+const output = await api.image({ type: 'neko' })
+// Final URL: https://nekobot.xyz/api/image?type=neko
+console.log(output)
+// { success: true, message: "https://...", color: 13419230 }
+```
 
-### Step 3: Go live
+```javascript Path Parameters
+// Add path parameters by passing them as arguments
+const api = createApi('https://postman-echo.com')
+const response = await api.get({ foo: 'bar' })
+// Final URL: https://postman-echo.com/get?foo=bar
+console.log(response.args) // { foo: 'bar' }
+```
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+```javascript POST Request
+// Pass request options as the third parameter
+const api = createApi('https://postman-echo.com')
+const response = await api.post(null, null, {
+  method: 'POST',
+  body: JSON.stringify({ foo: 'bar' }),
+  headers: { 'Content-Type': 'application/json' }
+})
+console.log(response.url) // https://postman-echo.com/post
+```
+
+```javascript Debug Mode
+// Enable debug mode to inspect the request without sending it
+const api = createApi('https://postman-echo.com', { x_debug: true })
+const debug = await api.get({ foo: 'bar' })
+console.log(debug)
+// {
+//   prop: 'get',
+//   path: 'https://postman-echo.com/get?foo=bar',
+//   id: { foo: 'bar' },
+//   params: undefined,
+//   args: { x_debug: true }
+// }
+```
+</CodeGroup>
+
+<Note>
+  Use `x_response: true` to get the raw Response object, or `x_text: true` to get text instead of JSON.
+</Note>
+
+## Error handling
+
+The `@kreisler/try-catch` package provides functional error handling with TypeScript support.
+
+<Tabs>
+  <Tab title="Synchronous">
+    ```javascript
+    import { tryCatch } from '@kreisler/try-catch'
+    
+    // Handle errors from synchronous functions
+    const [error, result] = tryCatch(JSON.parse, '{"hello":"world"}')
+    
+    if (error) {
+      console.error('Parse failed:', error.message)
+    } else {
+      console.log(result) // { hello: 'world' }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Asynchronous">
+    ```javascript
+    import { tryCatchPromise } from '@kreisler/try-catch'
+    
+    // Handle errors from async functions
+    const [error, result] = await tryCatchPromise(
+      globalThis.fetch,
+      'https://jsonplaceholder.typicode.com/todos/1'
+    )
+    
+    if (error) {
+      console.error('Request failed:', error.message)
+    } else {
+      const data = await result.json()
+      console.log(data) // { userId: 1, id: 1, title: '...' }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="With Functions">
+    ```javascript
+    import { tryCatch } from '@kreisler/try-catch'
+    
+    const sum = (a, b) => a + b
+    const [error, result] = tryCatch(sum, 2, 3)
+    
+    if (error) {
+      console.error(error.message)
+    } else {
+      console.log(result) // 5
+    }
+    ```
+  </Tab>
+</Tabs>
+
+<Warning>
+  The error is always returned as the first element of the array. If there's no error, it will be `null`.
+</Warning>
+
+## Debouncing functions
+
+The `@kreisler/debounce` package helps you control function execution timing with advanced features.
+
+```javascript
+import { debounce } from '@kreisler/debounce'
+
+// Basic debounce
+const handleSearch = (query) => {
+  console.log('Searching for:', query)
+  // Make API call here
+}
+
+const debouncedSearch = debounce(handleSearch, 1000)
+
+// These calls will be debounced
+debouncedSearch('hello')     // Cancelled
+debouncedSearch('hello wo')  // Cancelled
+debouncedSearch('hello world') // Executes after 1 second
+```
+
+### Advanced debounce features
+
+```javascript
+import { debounce } from '@kreisler/debounce'
+
+const handleInput = (value) => {
+  console.log('Final value:', value)
+}
+
+const debouncedInput = debounce(handleInput, 1000, {
+  // Execute immediately on first call
+  immediate: true,
+  
+  // Called every time the debounced function is invoked
+  onCall: (value) => {
+    console.log('Input changed:', value)
+  },
+  
+  // Called when debounce completes
+  onComplete: (value) => {
+    console.log('Debounce completed for:', value)
+  },
+  
+  // Trigger flood handler after 7 calls
+  flood: 7,
+  
+  // Called when flood limit is reached
+  onFlood: (value) => {
+    console.log('Too many calls! Last value:', value)
+  }
+})
+
+debouncedInput('hello') // Executes immediately (immediate: true)
+```
+
+## JavaScript helpers
+
+The `@kreisler/js-helpers` package provides useful utility functions for common tasks.
+
+<CodeGroup>
+```javascript Normalize Strings
+import { normalize } from '@kreisler/js-helpers'
+
+// Remove accents and special characters
+const text = 'ÁÉÍÓÚáéíóú'
+const normalized = normalize(text)
+console.log(normalized) // 'AEIOUaeiou'
+
+// For URLs (removes special chars and lowercases)
+const url = normalize('Hello World! 2024', false)
+console.log(url) // 'hello-world-2024'
+```
+
+```javascript Abbreviate Numbers
+import { abbreviateNumber, bytes2Mb } from '@kreisler/js-helpers'
+
+// Abbreviate large numbers
+console.log(abbreviateNumber(1000))          // '1.0k'
+console.log(abbreviateNumber(1000000))       // '1.0M'
+console.log(abbreviateNumber(1000000000))    // '1.0B'
+
+// Convert bytes to megabytes
+const fileSize = 1967917
+console.log(bytes2Mb(fileSize) + ' MB')      // '1.88 MB'
+```
+
+```javascript Text Similarity
+import { titleSimilarity } from '@kreisler/js-helpers'
+
+// Calculate similarity between strings (0-1)
+const similarity1 = titleSimilarity('hola', 'hola')
+console.log(similarity1) // 1
+
+const similarity2 = titleSimilarity(
+  'hola mundo como estan',
+  'hola mundo estan muy bien'
+)
+console.log(similarity2) // 0.52
+```
+
+```javascript Trim Text
+import { trimText } from '@kreisler/js-helpers'
+
+const text = '    Hello World!    \n\n   Welcome   '
+const cleaned = trimText(text)
+console.log(cleaned) // 'Hello World! Welcome'
+```
+</CodeGroup>
+
+## Scheduled tasks
+
+The `@kreisler/js-cron` package wraps node-cron with a clean class-based interface.
+
+<Steps>
+  <Step title="Initialize the scheduler">
+    ```javascript
+    import { JsCron } from '@kreisler/js-cron'
+    
+    const cron = new JsCron({ timezone: 'America/Bogota' })
+    ```
+  </Step>
+  
+  <Step title="Create a task">
+    ```javascript
+    // Run every 10 seconds
+    const result = cron.createTask(
+      'myTask',
+      '*/10 * * * * *',
+      () => {
+        console.log('Task executed at', new Date())
+      }
+    )
+    
+    console.log(result)
+    // { success: true, message: 'Tarea "myTask" creada con éxito.', task: ... }
+    ```
+  </Step>
+  
+  <Step title="Control task execution">
+    ```javascript
+    // Pause the task
+    cron.pauseTask('myTask')
+    
+    // Resume the task
+    cron.resumeTask('myTask')
+    
+    // Destroy the task
+    cron.destroyTask('myTask')
+    ```
+  </Step>
+</Steps>
+
+### Cron expression examples
+
+<CardGroup cols={2}>
+  <Card title="Every 15 minutes">
+    ```javascript
+    '0 */15 * * * *'
+    ```
+  </Card>
+  
+  <Card title="Every hour at minute 0">
+    ```javascript
+    '0 0 * * * *'
+    ```
+  </Card>
+  
+  <Card title="Business hours only">
+    ```javascript
+    '0 */15 6-23 * * *'
+    // Every 15 minutes from 6 AM to 11 PM
+    ```
+  </Card>
+  
+  <Card title="Every weekday at 9 AM">
+    ```javascript
+    '0 0 9 * * 1-5'
+    ```
+  </Card>
+</CardGroup>
+
+## Execute shell commands
+
+The `@kreisler/exec-promise` package wraps child_process.exec in a promise.
+
+```javascript
+import { execPromise } from '@kreisler/exec-promise'
+
+try {
+  const { stdout, stderr } = await execPromise('echo %PATH%')
+  console.log('Output:', stdout)
+  
+  if (stderr) {
+    console.error('Errors:', stderr)
+  }
+} catch (error) {
+  console.error('Command failed:', error.message)
+}
+```
+
+### Real-world example
+
+```javascript
+import { execPromise } from '@kreisler/exec-promise'
+import { tryCatchPromise } from '@kreisler/try-catch'
+
+// Combine with error handling
+const [error, result] = await tryCatchPromise(
+  execPromise,
+  'git status --short'
+)
+
+if (error) {
+  console.error('Git command failed:', error.message)
+} else {
+  console.log('Changed files:', result.stdout)
+}
+```
+
+## ESM dirname
+
+The `@kreisler/dirname-for-module` package provides `__dirname` functionality for ES modules.
+
+```javascript
+import { __dirname } from '@kreisler/dirname-for-module'
+import { join } from 'path'
+
+// Use __dirname in ES modules
+const configPath = join(__dirname, 'config.json')
+console.log('Config file:', configPath)
+
+// Works with both npm and pnpm installations
+```
+
+<Note>
+  This package automatically detects whether you're using npm or pnpm and adjusts the path calculation accordingly.
+</Note>
+
+## Combining packages
+
+Kreisler packages work well together. Here's an example combining multiple packages:
+
+```javascript
+import { createApi } from '@kreisler/createapi'
+import { tryCatchPromise } from '@kreisler/try-catch'
+import { debounce } from '@kreisler/debounce'
+import { normalize } from '@kreisler/js-helpers'
+
+// Create a debounced search function with error handling
+const api = createApi('https://api.example.com')
+
+const searchUser = async (query) => {
+  const normalizedQuery = normalize(query, false)
+  const [error, result] = await tryCatchPromise(
+    api.users,
+    { q: normalizedQuery }
+  )
+  
+  if (error) {
+    console.error('Search failed:', error.message)
+    return []
+  }
+  
+  return result.data
+}
+
+const debouncedSearch = debounce(searchUser, 500, {
+  onCall: () => console.log('Searching...'),
+  onComplete: () => console.log('Search complete')
+})
+
+// Use it in your application
+debouncedSearch('Jóhn Döe')
+```
+
+## TypeScript support
+
+All packages include TypeScript definitions. Here's how to use them:
+
+```typescript
+import { createApi, type ArgsCreateApi } from '@kreisler/createapi'
+import { tryCatchPromise } from '@kreisler/try-catch'
+import { JsCron, type ScheduleOptions } from '@kreisler/js-cron'
+
+// Type-safe API interface
+interface MyAPI {
+  users: (params: { q: string }) => Promise<{ data: User[] }>
+}
+
+interface User {
+  id: number
+  name: string
+  email: string
+}
+
+const api = createApi<MyAPI>('https://api.example.com')
+
+// TypeScript will infer types correctly
+const [error, result] = await tryCatchPromise(
+  api.users,
+  { q: 'john' }
+)
+
+if (!error && result) {
+  result.data.forEach((user: User) => {
+    console.log(user.name)
+  })
+}
+```
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
-
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Core utilities" icon="cube" href="/packages/createapi">
+    Explore API client, debounce, error handling utilities
+  </Card>
+  
+  <Card title="API reference" icon="code" href="/api/createapi">
+    View complete API documentation
+  </Card>
+  
+  <Card title="Helpers & tools" icon="wrench" href="/packages/js-helpers">
+    String manipulation, conversions, and more
+  </Card>
+  
+  <Card title="GitHub" icon="github" href="https://github.com/itskreisler/pkgs">
+    Contribute to the project
+  </Card>
 </CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>

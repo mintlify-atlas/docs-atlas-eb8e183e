@@ -1,0 +1,554 @@
+---
+title: '@kreisler/js-helpers'
+description: 'A comprehensive JavaScript/TypeScript library for dealing with code repetition and common utility functions'
+---
+
+# @kreisler/js-helpers
+
+A comprehensive JavaScript/TypeScript library that provides a collection of utility functions to eliminate code repetition. This package includes helpers for string manipulation, data conversion, text formatting, API creation, error handling, and much more.
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install @kreisler/js-helpers
+```
+
+```bash pnpm
+pnpm add @kreisler/js-helpers
+```
+
+```bash yarn
+yarn add @kreisler/js-helpers
+```
+</CodeGroup>
+
+## Core Functions
+
+### String Normalization
+
+#### normalize()
+
+Normalizes a string by removing or replacing special characters and accents.
+
+<ParamField path="str" type="string" required>
+  The string to normalize
+</ParamField>
+
+<ParamField path="urls" type="boolean" default="true">
+  If true, replaces special characters with normalized equivalents. If false, removes them and converts to URL-friendly format.
+</ParamField>
+
+**Returns:** `string` - The normalized string
+
+```typescript
+import { normalize } from '@kreisler/js-helpers';
+
+// Remove accents and special characters
+const text = 'ÁÉÍÓÚáéíóú';
+console.log(normalize(text)); // 'AEIOUaeiou'
+
+// Create URL-friendly strings
+const title = 'Hello World! ¿Cómo estás?';
+console.log(normalize(title, false)); // 'hello-world-como-estas'
+```
+
+#### trimText()
+
+Removes excessive whitespace and newlines from text.
+
+<ParamField path="str" type="string" required>
+  The string to trim
+</ParamField>
+
+**Returns:** `string` - The trimmed string
+
+```typescript
+import { trimText } from '@kreisler/js-helpers';
+
+const text = '       Hello World!        \n\n\n   Welcome to programming.   ';
+console.log(trimText(text)); // 'Hello World! Welcome to programming.'
+```
+
+#### stripHtmlTags()
+
+Removes HTML tags from a string.
+
+<ParamField path="str" type="string" required>
+  The string containing HTML tags
+</ParamField>
+
+<ParamField path="exp" type="RegExp" default="/<[^>]*>/g">
+  Custom regex pattern for matching HTML tags
+</ParamField>
+
+**Returns:** `string` - The string without HTML tags
+
+```typescript
+import { stripHtmlTags } from '@kreisler/js-helpers';
+
+const html = '<p>Hello <strong>World</strong>!</p>';
+console.log(stripHtmlTags(html)); // 'Hello World!'
+```
+
+### String Similarity
+
+#### levenshteinDistance()
+
+Calculates the Levenshtein distance between two strings (the minimum number of single-character edits required to change one string into another).
+
+```typescript
+import { levenshteinDistance } from '@kreisler/js-helpers';
+
+const distance = levenshteinDistance('kitten', 'sitting');
+console.log(distance); // 3
+```
+
+#### titleSimilarity()
+
+Calculates the similarity between two titles (returns a value between 0 and 1, where 1 is identical).
+
+<ParamField path="title1" type="string" required>
+  The first title to compare
+</ParamField>
+
+<ParamField path="title2" type="string" required>
+  The second title to compare
+</ParamField>
+
+**Returns:** `number` - Similarity score between 0 and 1
+
+<Note>A threshold of 0.8 is recommended for determining if titles are similar enough</Note>
+
+```typescript
+import { titleSimilarity } from '@kreisler/js-helpers';
+
+console.log(titleSimilarity('hola', 'hola')); // 1
+console.log(titleSimilarity('hola mundo como estan', 'hola mundo estan muy bien')); // 0.52
+console.log(titleSimilarity('hola', '')); // 0
+```
+
+### Number Formatting
+
+#### abbreviateNumber()
+
+Abbreviates large numbers with k, M, B, or T suffixes.
+
+<ParamField path="number" type="number" required>
+  The number to abbreviate
+</ParamField>
+
+**Returns:** `string` - The abbreviated number
+
+```typescript
+import { abbreviateNumber } from '@kreisler/js-helpers';
+
+console.log(abbreviateNumber(1000)); // '1.0k'
+console.log(abbreviateNumber(1000000)); // '1.0M'
+console.log(abbreviateNumber(1000000000)); // '1.0B'
+console.log(abbreviateNumber(1000000000000)); // '1.0T'
+```
+
+#### Byte Conversion Functions
+
+Convert bytes to larger units with customizable decimal precision.
+
+```typescript
+import { bytes2Kb, bytes2Mb, bytes2Gb } from '@kreisler/js-helpers';
+
+const size = 1967917;
+
+console.log(bytes2Kb(size)); // '1921.79' KB
+console.log(bytes2Mb(size)); // '1.88' MB
+console.log(bytes2Gb(size, 3)); // '0.002' GB
+```
+
+<Accordion title="Function Signatures">
+  ```typescript
+  bytes2Kb(size: number, decimal?: number): string
+  bytes2Mb(size: number, decimal?: number): string
+  bytes2Gb(size: number, decimal?: number): string
+  ```
+</Accordion>
+
+### Base64 Converters
+
+Encode and decode UTF-8 strings to/from Base64.
+
+```typescript
+import { base64converters } from '@kreisler/js-helpers';
+
+const text = 'Hello, World! 👋';
+
+// Encode to Base64
+const encoded = base64converters.utf8Tob64(text);
+console.log(encoded);
+
+// Decode from Base64
+const decoded = base64converters.b64Toutf8(encoded);
+console.log(decoded); // 'Hello, World! 👋'
+```
+
+<ParamField path="base64converters.utf8Tob64" type="(str: string) => string">
+  Converts a UTF-8 string to Base64 encoding
+</ParamField>
+
+<ParamField path="base64converters.b64Toutf8" type="(str: string) => string">
+  Decodes a Base64 string to UTF-8
+</ParamField>
+
+### Unit Converters
+
+Convert between different units of measurement.
+
+```typescript
+import { converters } from '@kreisler/js-helpers';
+
+// Temperature conversions
+console.log(converters.kToF(300)); // Kelvin to Fahrenheit: 81
+console.log(converters.kToC(300)); // Kelvin to Celsius: 27
+
+// Speed conversions
+console.log(converters.msToMph(10)); // m/s to mph: 22
+console.log(converters.msToKmh(10)); // m/s to km/h: 36
+
+// All functions support precision parameter
+console.log(converters.kToC(300, 2)); // 26.85
+```
+
+<Accordion title="Available Converter Functions">
+  <ParamField path="kToF" type="(k: number, precision?: number) => number">
+    Converts Kelvin to Fahrenheit
+  </ParamField>
+  
+  <ParamField path="kToC" type="(k: number, precision?: number) => number">
+    Converts Kelvin to Celsius
+  </ParamField>
+  
+  <ParamField path="msToMph" type="(speed: number, precision?: number) => number">
+    Converts meters per second to miles per hour
+  </ParamField>
+  
+  <ParamField path="msToKmh" type="(speed: number, precision?: number) => number">
+    Converts meters per second to kilometers per hour
+  </ParamField>
+</Accordion>
+
+### WhatsApp Markdown Formatting
+
+The `MarkdownWsp` object provides functions to format text for WhatsApp.
+
+```typescript
+import { MarkdownWsp } from '@kreisler/js-helpers';
+// Or import individual functions:
+import { Bold, Italic, Strikethrough, Monospace } from '@kreisler/js-helpers';
+
+// Format text
+console.log(MarkdownWsp.Bold('Hello')); // '*Hello*'
+console.log(MarkdownWsp.Italic('Hello')); // '_Hello_'
+console.log(MarkdownWsp.Strikethrough('Hello')); // '~Hello~'
+console.log(MarkdownWsp.Monospace('code')); // '```code```'
+console.log(MarkdownWsp.InlineCode('code')); // '`code`'
+console.log(MarkdownWsp.Quote('Hello')); // '> Hello'
+
+// Lists
+console.log(MarkdownWsp.BulletedList(['Item 1', 'Item 2']));
+// Output:
+// - Item 1
+// - Item 2
+
+console.log(MarkdownWsp.BulletedList('Single item', '*'));
+// Output: * Single item
+
+console.log(MarkdownWsp.NumberedLists(['First', 'Second', 'Third']));
+// Output:
+// 1. First
+// 2. Second
+// 3. Third
+```
+
+<Note>
+  WhatsApp supports the following formatting:
+  - **Bold**: `*text*`
+  - *Italic*: `_text_`
+  - ~Strikethrough~: `~text~`
+  - Monospace: ` ```text``` `
+  - Quote: `> text`
+  - Bulleted List: `- text` or `* text`
+  - Numbered List: `1. text`
+</Note>
+
+### Command-Line Argument Parser
+
+#### argv2Object()
+
+Converts command-line arguments to a key-value object. Supports both simple `key=value` format and Unix-style options.
+
+<ParamField path="argv" type="string[]" required>
+  Array of command-line arguments to parse
+</ParamField>
+
+<ParamField path="unixmode" type="boolean" default="true">
+  Whether to parse Unix-style command-line options (e.g., `-h`, `--name=value`, `--is-admin`)
+</ParamField>
+
+**Returns:** Object with parsed key-value pairs
+
+```typescript
+import { argv2Object } from '@kreisler/js-helpers';
+
+// Unix-style arguments (default)
+const args1 = argv2Object(['--task=build', '--execute=true', '-v']);
+console.log(args1);
+// { task: 'build', execute: 'true', v: true }
+
+// Simple key=value format
+const args2 = argv2Object(['name=John', 'age=30', 'level=admin'], false);
+console.log(args2);
+// { name: 'John', age: '30', level: 'admin' }
+
+// Flags without values become true
+const args3 = argv2Object(['--is-admin', '--verbose']);
+console.log(args3);
+// { is_admin: true, verbose: true }
+```
+
+<Warning>
+  - Dashes in Unix-style options are automatically converted to underscores
+  - Options without values are set to `true`
+  - The function will throw an error if no arguments are provided or if arguments don't match the expected format
+</Warning>
+
+### Debounce Function
+
+Create debounced functions with advanced features like immediate execution, callbacks, and flood protection.
+
+```typescript
+import { debounce } from '@kreisler/js-helpers';
+
+// Basic debounce
+const debouncedLog = debounce(console.log, 1000);
+debouncedLog('This will be delayed by 1 second');
+
+// Advanced debounce with options
+const advancedDebounce = debounce(
+  (message) => console.log('Executed:', message),
+  1000,
+  {
+    immediate: true,  // Execute immediately on first call
+    onCall: () => console.log('Function called'),
+    onComplete: () => console.log('Debounce completed'),
+    flood: 5,  // Trigger onFlood every 5 calls
+    onFlood: () => console.log('Too many calls!')
+  }
+);
+
+advancedDebounce('Hello');
+```
+
+<Accordion title="Debounce Options">
+  <ParamField path="func" type="Function" required>
+    The function to debounce
+  </ParamField>
+  
+  <ParamField path="msWait" type="number" required>
+    Milliseconds to wait before calling the function
+  </ParamField>
+  
+  <ParamField path="fns" type="object">
+    Configuration object with optional callbacks:
+    - `immediate` (boolean): Execute immediately on first call
+    - `onCall` (Function): Called when debounce function is invoked
+    - `onComplete` (Function): Called when debounce execution completes
+    - `flood` (number): Number of calls before triggering onFlood
+    - `onFlood` (Function): Called when flood limit is reached
+  </ParamField>
+</Accordion>
+
+### API Client Creator
+
+#### createApi()
+
+Creates a dynamic API client using JavaScript Proxy. Build type-safe API clients with automatic URL construction.
+
+```typescript
+import { createApi } from '@kreisler/js-helpers';
+
+// Define your API structure
+interface PokeAPI {
+  pokemon: {
+    (options: { limit: number; offset: number }): Promise<any>;
+    (name: string): Promise<{ name: string; id: number }>;
+  };
+  'pokemon-species': (name: string) => Promise<any>;
+  type: (id: number) => Promise<any>;
+}
+
+// Create the API client
+const pokeapi = createApi<PokeAPI>('https://pokeapi.co/api/v2');
+
+// Use the API
+const pikachu = await pokeapi.pokemon('pikachu');
+console.log(pikachu);
+
+// With query parameters
+const list = await pokeapi.pokemon({ limit: 20, offset: 0 });
+console.log(list);
+```
+
+<Steps>
+  <Step title="Define your API interface">
+    Create a TypeScript interface that describes your API endpoints and their parameters.
+  </Step>
+  
+  <Step title="Create the API client">
+    Use `createApi<YourInterface>(baseUrl)` to create a type-safe client.
+  </Step>
+  
+  <Step title="Make API calls">
+    Call methods on the client as if they were regular functions. URLs are constructed automatically.
+  </Step>
+</Steps>
+
+```typescript
+// Example with custom response handling
+interface ImageAPI {
+  'img.jpg': (params: {
+    w: number;
+    h: number;
+    tc: string;
+    bg: string;
+    t: string;
+  }, _: null, opts: { x_response: true }) => Promise<Response>;
+}
+
+const imageApi = createApi<ImageAPI>('https://via.assets.so');
+
+const response = await imageApi['img.jpg'](
+  { w: 400, h: 150, tc: 'blue', bg: '#cecece', t: 'Hello' },
+  null,
+  { x_response: true }
+);
+
+const buffer = await response.arrayBuffer();
+```
+
+<Accordion title="createApi Options">
+  <ParamField path="url" type="string" required>
+    Base URL for the API
+  </ParamField>
+  
+  <ParamField path="args" type="ArgsCreateApi">
+    Optional RequestInit configuration with additional options:
+    - `x_debug`: Enable debug mode (returns request info instead of making the call)
+    - `x_json`: Force JSON response parsing (default)
+    - `x_text`: Force text response parsing
+    - `x_response`: Return raw Response object
+  </ParamField>
+</Accordion>
+
+### Try-Catch Helpers
+
+Simplify error handling with Go-style error handling patterns.
+
+```typescript
+import { TCatch } from '@kreisler/js-helpers';
+
+// Async try-catch
+const [error, result] = await TCatch.tryCatchPromise(
+  fetch,
+  'https://api.example.com/data'
+);
+
+if (error) {
+  console.error('Request failed:', error.message);
+} else {
+  const data = await result.json();
+  console.log(data);
+}
+
+// Synchronous try-catch
+const [err, value] = TCatch.tryCatch(() => {
+  return JSON.parse('{"valid": "json"}');
+});
+
+if (err) {
+  console.error('Parse failed:', err.message);
+} else {
+  console.log(value);
+}
+```
+
+<Note>
+  The try-catch helpers return a tuple `[error, result]` where:
+  - If successful: `[null, result]`
+  - If error occurs: `[Error]`
+  
+  This pattern eliminates the need for try-catch blocks and makes error handling more explicit.
+</Note>
+
+## TypeScript Support
+
+This package is written in TypeScript and includes complete type definitions. All functions have proper type signatures and JSDoc comments for excellent IDE support.
+
+```typescript
+import type { TFns, ArgsCreateApi } from '@kreisler/js-helpers';
+
+// Full type safety and autocompletion
+const api = createApi<YourAPIType>('https://api.example.com');
+```
+
+## API Reference Summary
+
+<Accordion title="String Manipulation">
+  - `normalize(str, urls?)` - Normalize strings and remove special characters
+  - `trimText(str)` - Remove excessive whitespace
+  - `stripHtmlTags(str, exp?)` - Remove HTML tags
+  - `levenshteinDistance(a, b)` - Calculate edit distance
+  - `titleSimilarity(title1, title2)` - Calculate title similarity (0-1)
+</Accordion>
+
+<Accordion title="Number & Unit Conversion">
+  - `abbreviateNumber(number)` - Abbreviate large numbers (k, M, B, T)
+  - `bytes2Kb(size, decimal?)` - Convert bytes to KB
+  - `bytes2Mb(size, decimal?)` - Convert bytes to MB
+  - `bytes2Gb(size, decimal?)` - Convert bytes to GB
+  - `converters.kToF(k, precision?)` - Kelvin to Fahrenheit
+  - `converters.kToC(k, precision?)` - Kelvin to Celsius
+  - `converters.msToMph(speed, precision?)` - m/s to mph
+  - `converters.msToKmh(speed, precision?)` - m/s to km/h
+</Accordion>
+
+<Accordion title="Encoding & Data">
+  - `base64converters.utf8Tob64(str)` - Encode UTF-8 to Base64
+  - `base64converters.b64Toutf8(str)` - Decode Base64 to UTF-8
+  - `argv2Object(argv, unixmode?)` - Parse command-line arguments
+</Accordion>
+
+<Accordion title="Text Formatting">
+  - `MarkdownWsp.Bold(text)` - Format as bold
+  - `MarkdownWsp.Italic(text)` - Format as italic
+  - `MarkdownWsp.Strikethrough(text)` - Format as strikethrough
+  - `MarkdownWsp.Monospace(text)` - Format as monospace
+  - `MarkdownWsp.InlineCode(text)` - Format as inline code
+  - `MarkdownWsp.Quote(text)` - Format as quote
+  - `MarkdownWsp.BulletedList(items, bullet?)` - Create bulleted list
+  - `MarkdownWsp.NumberedLists(items)` - Create numbered list
+</Accordion>
+
+<Accordion title="Utilities">
+  - `debounce(func, msWait, fns?)` - Create debounced function
+  - `createApi<T>(url, args?)` - Create dynamic API client
+  - `TCatch.tryCatch(fn, ...args)` - Synchronous try-catch wrapper
+  - `TCatch.tryCatchPromise(fn, ...args)` - Async try-catch wrapper
+</Accordion>
+
+## Links
+
+- [GitHub Repository](https://github.com/itskreisler/pkgs)
+- [npm Package](https://www.npmjs.com/package/@kreisler/js-helpers)
+- [Report Issues](https://github.com/itskreisler/pkgs/issues)
+
+## License
+
+MIT © [Kreisler](https://linktr.ee/itskreisler)

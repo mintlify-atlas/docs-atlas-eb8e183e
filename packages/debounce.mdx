@@ -1,0 +1,394 @@
+---
+title: "@kreisler/debounce"
+description: "Advanced debounce function for JavaScript and TypeScript with hooks and flood protection"
+---
+
+# @kreisler/debounce
+
+A powerful debounce implementation with advanced features like immediate execution, lifecycle hooks, and flood protection.
+
+## Installation
+
+<CodeGroup>
+
+```bash npm
+npm install @kreisler/debounce
+```
+
+```bash pnpm
+pnpm add @kreisler/debounce
+```
+
+```bash yarn
+yarn add @kreisler/debounce
+```
+
+</CodeGroup>
+
+## Overview
+
+Debouncing is a technique to limit how often a function executes by delaying its execution until after a specified time has passed since the last call. This is particularly useful for:
+
+- Search input fields
+- Window resize handlers
+- Scroll event handlers
+- API calls triggered by user input
+- Auto-save functionality
+
+<Note>
+This package extends basic debouncing with lifecycle hooks, immediate execution options, and flood detection.
+</Note>
+
+## Basic Usage
+
+```typescript
+import { debounce } from '@kreisler/debounce';
+
+// Create a debounced function
+const debouncedLog = debounce(console.log, 1000);
+
+// Call it multiple times
+debouncedLog('Hello'); // Won't execute immediately
+debouncedLog('World'); // Won't execute immediately
+debouncedLog('!');     // Will execute after 1000ms with '!'
+```
+
+## API Reference
+
+### debounce
+
+Creates a debounced version of the provided function.
+
+```typescript
+function debounce(
+  func: Function,
+  msWait: number,
+  fns?: Partial<TFns>
+): Function
+```
+
+<ParamField path="func" type="Function" required>
+  The function to debounce
+</ParamField>
+
+<ParamField path="msWait" type="number" required>
+  The number of milliseconds to wait before executing the function
+</ParamField>
+
+<ParamField path="fns" type="TFns">
+  Optional configuration object with lifecycle hooks and settings
+  
+  <ParamField path="immediate" type="boolean" default={false}>
+    If `true`, the function will be called immediately on the first call, then debounced for subsequent calls
+  </ParamField>
+  
+  <ParamField path="onCall" type="Function">
+    Callback function executed every time the debounced function is called
+  </ParamField>
+  
+  <ParamField path="onComplete" type="Function">
+    Callback function executed when the debounced function finally executes
+  </ParamField>
+  
+  <ParamField path="flood" type="number">
+    Number of calls that trigger the `onFlood` callback. For example, if set to 5, `onFlood` will be called every 5 attempts
+  </ParamField>
+  
+  <ParamField path="onFlood" type="Function">
+    Callback function executed when the flood limit is reached
+  </ParamField>
+</ParamField>
+
+### TFns Interface
+
+```typescript
+interface TFns {
+  immediate: boolean;
+  onCall: Function;
+  onComplete: Function;
+  flood: number;
+  onFlood: Function;
+}
+```
+
+## Examples
+
+### Simple Debounce
+
+<Tabs>
+  <Tab title="JavaScript">
+    ```javascript
+    import { debounce } from '@kreisler/debounce';
+
+    const handleSearch = (query) => {
+      console.log('Searching for:', query);
+      // API call here
+    };
+
+    const debouncedSearch = debounce(handleSearch, 500);
+
+    // User types quickly
+    debouncedSearch('a');
+    debouncedSearch('ab');
+    debouncedSearch('abc');
+    // Only 'abc' will be searched after 500ms
+    ```
+  </Tab>
+  
+  <Tab title="TypeScript">
+    ```typescript
+    import { debounce } from '@kreisler/debounce';
+
+    const handleSearch = (query: string): void => {
+      console.log('Searching for:', query);
+      // API call here
+    };
+
+    const debouncedSearch = debounce(handleSearch, 500);
+
+    // User types quickly
+    debouncedSearch('a');
+    debouncedSearch('ab');
+    debouncedSearch('abc');
+    // Only 'abc' will be searched after 500ms
+    ```
+  </Tab>
+</Tabs>
+
+### Immediate Execution
+
+Execute the function immediately on the first call, then debounce subsequent calls:
+
+```typescript
+import { debounce } from '@kreisler/debounce';
+
+const saveData = (data) => {
+  console.log('Saving:', data);
+};
+
+const debouncedSave = debounce(saveData, 1000, {
+  immediate: true
+});
+
+// First call executes immediately
+debouncedSave('First call');  // Logs immediately
+
+// Subsequent calls are debounced
+debouncedSave('Second call');
+debouncedSave('Third call');  // Logs after 1000ms
+```
+
+### Lifecycle Hooks
+
+Track when the debounced function is called and completed:
+
+```typescript
+import { debounce } from '@kreisler/debounce';
+
+const processInput = (value) => {
+  console.log('Processing:', value);
+};
+
+const debouncedProcess = debounce(processInput, 500, {
+  onCall: (value) => {
+    console.log('Function called with:', value);
+  },
+  onComplete: (value) => {
+    console.log('Processing complete for:', value);
+  }
+});
+
+debouncedProcess('test');
+// Logs: "Function called with: test"
+// After 500ms logs: "Processing: test"
+// Then logs: "Processing complete for: test"
+```
+
+### Flood Protection
+
+Detect when the function is being called too frequently:
+
+```typescript
+import { debounce } from '@kreisler/debounce';
+
+let attemptCount = 0;
+
+const submitForm = (data) => {
+  console.log('Submitting form:', data);
+};
+
+const debouncedSubmit = debounce(submitForm, 1000, {
+  flood: 5,
+  onFlood: (data) => {
+    console.warn('Slow down! Too many attempts.');
+    // Show user notification
+  }
+});
+
+// Rapid calls
+for (let i = 0; i < 10; i++) {
+  debouncedSubmit({ attempt: i });
+}
+// onFlood will be called at attempts 5 and 10
+```
+
+### Complete Example with All Features
+
+```typescript
+import { debounce } from '@kreisler/debounce';
+
+const apiCall = (searchTerm) => {
+  console.log('Making API call for:', searchTerm);
+  return fetch(`/api/search?q=${searchTerm}`);
+};
+
+const debouncedSearch = debounce(apiCall, 1000, {
+  immediate: true,
+  onCall: (term) => {
+    console.log('Search initiated for:', term);
+    // Show loading indicator
+  },
+  onComplete: (term) => {
+    console.log('Search completed for:', term);
+    // Hide loading indicator
+  },
+  flood: 7,
+  onFlood: (term) => {
+    console.warn('You are searching too quickly!');
+    // Show rate limit warning
+  }
+});
+
+// Usage in a search component
+const searchInput = document.querySelector('#search');
+searchInput.addEventListener('input', (e) => {
+  debouncedSearch(e.target.value);
+});
+```
+
+## Common Use Cases
+
+<Accordion title="Search Input Field">
+  ```typescript
+  import { debounce } from '@kreisler/debounce';
+
+  const searchAPI = async (query) => {
+    const response = await fetch(`/api/search?q=${query}`);
+    return response.json();
+  };
+
+  const debouncedSearch = debounce(searchAPI, 300);
+
+  document.querySelector('#search').addEventListener('input', (e) => {
+    debouncedSearch(e.target.value);
+  });
+  ```
+</Accordion>
+
+<Accordion title="Window Resize Handler">
+  ```typescript
+  import { debounce } from '@kreisler/debounce';
+
+  const handleResize = () => {
+    console.log('Window resized to:', window.innerWidth, window.innerHeight);
+    // Recalculate layout
+  };
+
+  const debouncedResize = debounce(handleResize, 250);
+
+  window.addEventListener('resize', debouncedResize);
+  ```
+</Accordion>
+
+<Accordion title="Auto-Save Form">
+  ```typescript
+  import { debounce } from '@kreisler/debounce';
+
+  const saveFormData = (formData) => {
+    localStorage.setItem('draft', JSON.stringify(formData));
+    console.log('Form auto-saved');
+  };
+
+  const debouncedSave = debounce(saveFormData, 2000, {
+    onComplete: () => {
+      // Show "Saved" indicator
+      document.querySelector('#save-status').textContent = 'Saved';
+    }
+  });
+
+  document.querySelector('form').addEventListener('input', () => {
+    const formData = new FormData(document.querySelector('form'));
+    debouncedSave(Object.fromEntries(formData));
+  });
+  ```
+</Accordion>
+
+<Accordion title="Scroll Event Handler">
+  ```typescript
+  import { debounce } from '@kreisler/debounce';
+
+  const checkScrollPosition = () => {
+    const scrollPercent = (window.scrollY / document.body.scrollHeight) * 100;
+    console.log('Scroll position:', scrollPercent + '%');
+  };
+
+  const debouncedScroll = debounce(checkScrollPosition, 100);
+
+  window.addEventListener('scroll', debouncedScroll);
+  ```
+</Accordion>
+
+## Best Practices
+
+<Steps>
+
+<Step title="Choose the Right Delay">
+  - **50-100ms**: For smooth UI updates (e.g., scroll, drag)
+  - **200-300ms**: For search/autocomplete
+  - **500-1000ms**: For API calls, validation
+  - **1000ms+**: For auto-save, expensive operations
+</Step>
+
+<Step title="Use Immediate When Appropriate">
+  Set `immediate: true` when you want the first interaction to be instant, with debouncing only for subsequent rapid calls.
+</Step>
+
+<Step title="Implement Flood Protection">
+  Use the `flood` option to detect and warn users about excessive function calls, improving UX and preventing abuse.
+</Step>
+
+<Step title="Clean Up Event Listeners">
+  Remember to remove event listeners when components unmount to prevent memory leaks:
+  ```typescript
+  const debouncedHandler = debounce(handler, 300);
+  element.addEventListener('input', debouncedHandler);
+  
+  // Cleanup
+  element.removeEventListener('input', debouncedHandler);
+  ```
+</Step>
+
+</Steps>
+
+<Warning>
+Debounced functions maintain state across calls. Create a new debounced function for each independent use case to avoid shared state issues.
+</Warning>
+
+## Type Exports
+
+```typescript
+import type { TArrowFunction, TFns } from '@kreisler/debounce';
+
+// TArrowFunction: (...args: any[]) => any
+// TFns: Interface with all configuration options
+```
+
+## License
+
+MIT License - see the [LICENSE](https://github.com/itskreisler/pkgs/blob/master/LICENSE) file for details.
+
+## Links
+
+- [GitHub Repository](https://github.com/itskreisler/pkgs)
+- [Package Homepage](https://github.com/itskreisler/pkgs/tree/master/packages/debounce#readme)
+- [Report Issues](https://github.com/itskreisler/pkgs/issues)

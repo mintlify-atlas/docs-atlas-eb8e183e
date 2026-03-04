@@ -1,0 +1,342 @@
+---
+title: "@kreisler/createapi"
+description: "A different way to make API requests with dynamic proxy-based endpoints"
+---
+
+# @kreisler/createapi
+
+A modern, type-safe API client that uses JavaScript Proxies to create dynamic API endpoints. Build flexible API clients without defining every endpoint manually.
+
+## Installation
+
+<CodeGroup>
+
+```bash npm
+npm install @kreisler/createapi
+```
+
+```bash pnpm
+pnpm add @kreisler/createapi
+```
+
+```bash yarn
+yarn add @kreisler/createapi
+```
+
+</CodeGroup>
+
+## Overview
+
+`@kreisler/createapi` provides a proxy-based approach to creating API clients. Instead of manually defining each endpoint, you can access any endpoint dynamically through property access.
+
+<Note>
+The package automatically handles URL construction, query parameters, and response parsing.
+</Note>
+
+## Basic Usage
+
+<Steps>
+
+<Step title="Import the package">
+
+```typescript
+import { createApi } from '@kreisler/createapi';
+```
+
+</Step>
+
+<Step title="Create an API instance">
+
+```typescript
+const api = createApi('https://api.example.com');
+```
+
+</Step>
+
+<Step title="Make requests">
+
+```typescript
+// GET request to https://api.example.com/users
+const users = await api.users();
+
+// GET request with ID: https://api.example.com/users/123
+const user = await api.users('123');
+
+// GET request with query params: https://api.example.com/users?limit=10&offset=0
+const paginatedUsers = await api.users({ limit: 10, offset: 0 });
+```
+
+</Step>
+
+</Steps>
+
+## API Reference
+
+### createApi
+
+Creates a new API client instance with dynamic endpoint access.
+
+```typescript
+function createApi<I>(
+  url: string,
+  args?: ArgsCreateApi
+): I
+```
+
+<ParamField path="url" type="string" required>
+  The base URL for the API
+</ParamField>
+
+<ParamField path="args" type="ArgsCreateApi">
+  Optional configuration options
+  
+  <ParamField path="x_debug" type="boolean" default={false}>
+    Enable debug mode to return request metadata instead of making the actual request
+  </ParamField>
+  
+  <ParamField path="x_json" type="boolean" default={true}>
+    Force JSON response parsing (default behavior)
+  </ParamField>
+  
+  <ParamField path="x_text" type="boolean" default={false}>
+    Force text response parsing instead of JSON
+  </ParamField>
+  
+  <ParamField path="x_response" type="boolean" default={false}>
+    Return the raw Response object instead of parsing
+  </ParamField>
+</ParamField>
+
+### ArgsCreateApi Interface
+
+```typescript
+interface ArgsCreateApi extends RequestInit {
+  x_debug?: boolean;
+  x_json?: boolean;
+  x_text?: boolean;
+  x_response?: boolean;
+}
+```
+
+Extends the standard `RequestInit` interface, allowing you to pass any standard fetch options.
+
+## Advanced Examples
+
+### TypeScript with Type Safety
+
+Define interfaces for your API endpoints:
+
+```typescript
+interface PokeAPI {
+  pokemon: {
+    (options: { limit: number; offset: number }): Promise<{
+      count: number;
+      next: string;
+      previous: string;
+      results: Array<{ name: string; url: string }>;
+    }>;
+    (name: string): Promise<{ name: string; id: number }>;
+  };
+  'pokemon-species': (name: string) => Promise<{ name: string; id: number }>;
+  type: (id: number) => Promise<{ name: string; id: number }>;
+}
+
+const pokeapi: PokeAPI = createApi('https://pokeapi.co/api/v2');
+
+// Fully typed requests
+const pikachu = await pokeapi.pokemon('pikachu');
+const pokemonList = await pokeapi.pokemon({ limit: 20, offset: 0 });
+```
+
+### POST Requests
+
+```typescript
+interface PostManAPI {
+  get: (params?: object) => Promise<{ args: object; headers: object; url: string }>;
+  post: (id?: any, params?: any, options?: ArgsCreateApi) => Promise<any>;
+}
+
+const postman: PostManAPI = createApi('https://postman-echo.com');
+
+const response = await postman.post(null, null, {
+  method: 'POST',
+  body: JSON.stringify({ foo: 'bar' }),
+  headers: { 'Content-Type': 'application/json' }
+});
+```
+
+### Debug Mode
+
+Use debug mode to inspect request construction without making actual HTTP calls:
+
+```typescript
+const api = createApi('https://api.example.com', { x_debug: true });
+
+const debug = await api.users({ limit: 10 });
+console.log(debug);
+// {
+//   prop: 'users',
+//   path: 'https://api.example.com/users?limit=10',
+//   id: { limit: 10 },
+//   params: undefined,
+//   args: { x_debug: true },
+//   target: {},
+//   receiver: {}
+// }
+```
+
+### Working with Binary Data
+
+Get raw Response objects for binary data:
+
+```typescript
+import { writeFile } from 'fs/promises';
+
+interface ImageAPI {
+  'img.jpg': (
+    options: { w: number; h: number; tc: string; bg: string; t: string },
+    _: null,
+    __: ArgsCreateApi
+  ) => Promise<Response>;
+}
+
+const imageApi: ImageAPI = createApi('https://via.assets.so');
+
+const response = await imageApi['img.jpg'](
+  { w: 400, h: 150, tc: 'blue', bg: '#cecece', t: 'Create API' },
+  null,
+  { x_response: true }
+);
+
+const buffer = await response.arrayBuffer();
+await writeFile('img.jpg', Buffer.from(buffer));
+```
+
+### Text Responses
+
+```typescript
+const api = createApi('https://api.example.com', { x_text: true });
+const htmlContent = await api.page('about');
+```
+
+## Dynamic Endpoint Construction
+
+<Tabs>
+  <Tab title="Simple Path">
+    ```typescript
+    const api = createApi('https://api.example.com');
+    await api.users(); // GET /users
+    ```
+  </Tab>
+  
+  <Tab title="With ID">
+    ```typescript
+    const api = createApi('https://api.example.com');
+    await api.users('123'); // GET /users/123
+    await api.users(123);   // GET /users/123
+    ```
+  </Tab>
+  
+  <Tab title="With Query Params">
+    ```typescript
+    const api = createApi('https://api.example.com');
+    await api.users({ page: 1, limit: 10 }); // GET /users?page=1&limit=10
+    ```
+  </Tab>
+  
+  <Tab title="Combined">
+    ```typescript
+    const api = createApi('https://api.example.com');
+    // GET /users/123?include=posts
+    await api.users('123', { include: 'posts' });
+    ```
+  </Tab>
+</Tabs>
+
+## Built-in Demo URLs
+
+The package includes several demo API URLs for testing:
+
+```typescript
+import { DemoUrlsEnum, createApi } from '@kreisler/createapi';
+
+// Available demo URLs:
+// - DemoUrlsEnum.NEKOBOT
+// - DemoUrlsEnum.POKEAPI
+// - DemoUrlsEnum.POSTMAN
+// - DemoUrlsEnum.ANIMEFLV_KUDASAI
+// - DemoUrlsEnum.FRASEDELDIA
+// - DemoUrlsEnum.ADVICE
+// - DemoUrlsEnum.DECAPI
+
+const pokeapi = createApi(DemoUrlsEnum.POKEAPI);
+const pokemon = await pokeapi.pokemon('ditto');
+```
+
+## Error Handling
+
+<Warning>
+The package throws errors for failed HTTP requests. Always use try-catch or promise error handling.
+</Warning>
+
+```typescript
+try {
+  const api = createApi('https://api.example.com');
+  const data = await api.users('123');
+} catch (error) {
+  if (error.message.includes('Request failed with status')) {
+    console.error('HTTP Error:', error.message);
+  } else if (error.message.includes('Error parsing response')) {
+    console.error('JSON Parse Error');
+  }
+}
+```
+
+## Features
+
+<Accordion title="Proxy-based Dynamic Endpoints">
+  Access any endpoint through property notation without pre-defining routes. The package automatically constructs URLs based on property access.
+</Accordion>
+
+<Accordion title="Flexible Parameter Handling">
+  - Pass objects as query parameters
+  - Pass strings/numbers as path segments
+  - Combine both in a single call
+  - Automatic URLSearchParams encoding
+</Accordion>
+
+<Accordion title="Multiple Response Formats">
+  - JSON (default)
+  - Text
+  - Raw Response object
+  - Binary data support
+</Accordion>
+
+<Accordion title="TypeScript Support">
+  Full TypeScript support with generics for type-safe API clients.
+</Accordion>
+
+<Accordion title="Debug Mode">
+  Inspect request construction without making actual HTTP calls.
+</Accordion>
+
+## Type Exports
+
+```typescript
+import type { 
+  ArgsCreateApi,
+  DebugResponse,
+  ExampleUrl,
+  DemoUrlsEnum 
+} from '@kreisler/createapi';
+```
+
+## License
+
+MIT License - see the [LICENSE](https://github.com/itskreisler/pkgs/blob/master/LICENSE) file for details.
+
+## Links
+
+- [GitHub Repository](https://github.com/itskreisler/pkgs)
+- [Package Homepage](https://github.com/itskreisler/pkgs/tree/master/packages/createapi#readme)
+- [Report Issues](https://github.com/itskreisler/pkgs/issues)

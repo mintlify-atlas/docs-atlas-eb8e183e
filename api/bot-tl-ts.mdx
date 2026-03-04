@@ -1,0 +1,573 @@
+---
+title: '@kreisler/bot-tl-ts'
+description: 'Complete API reference for the Telegram bot framework built with TypeScript'
+---
+
+## Overview
+
+`@kreisler/bot-tl-ts` is a TypeScript framework for building Telegram bots with an elegant command system and event handling.
+
+**Package**: `@kreisler/bot-tl-ts`  
+**Version**: `1.0.0`  
+**License**: MIT
+
+## Installation
+
+```bash
+npm install @kreisler/bot-tl-ts
+```
+
+## Quick Start
+
+```typescript
+import { ClientBot as Bot } from '@kreisler/bot-tl-ts';
+
+(async () => {
+  const bot = new Bot();
+  await bot.initialize();
+})();
+```
+
+---
+
+## Classes
+
+### ClientBot
+
+Extends `TelegramBot` from `node-telegram-bot-api` with additional functionality for command management and media handling.
+
+#### Constructor
+
+<ParamField path="token" type="string" default="TOKEN from env">
+  The Telegram Bot API token. Defaults to `TELEGRAM_TOKEN_DEV` or `TELEGRAM_TOKEN_PROD` based on `NODE_ENV`.
+</ParamField>
+
+<ParamField path="options" type="object" default="{ polling: true }">
+  Configuration options for the Telegram bot.
+  
+  <Expandable title="options properties">
+    <ParamField path="polling" type="boolean" default="true">
+      Enable polling mode for receiving updates.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+```typescript
+const bot = new ClientBot(token, { polling: true });
+```
+
+#### Properties
+
+<ResponseField name="commands" type="Map<RegExp, IExportCMD>">
+  Map storing all registered bot commands with their regular expression patterns.
+</ResponseField>
+
+<ResponseField name="slashArray" type="any[]">
+  Array for storing slash commands.
+</ResponseField>
+
+<ResponseField name="Bot" type="ClientBot">
+  Getter that returns the bot instance itself.
+</ResponseField>
+
+#### Methods
+
+##### initialize()
+
+Initializes the bot by loading events, handlers, and commands.
+
+<ParamField path="return" type="Promise<void>">
+  Returns a promise that resolves when initialization is complete.
+</ParamField>
+
+```typescript
+await bot.initialize();
+```
+
+##### sendMediaGroupTenByTen()
+
+Sends media in groups of 10 photos to a chat.
+
+<ParamField path="chatId" type="TelegramBot.ChatId" required>
+  The chat ID to send media to.
+</ParamField>
+
+<ParamField path="medias" type="readonly TelegramBot.InputMedia[]" required>
+  Array of media to send.
+</ParamField>
+
+<ParamField path="options" type="TelegramBot.SendMediaGroupOptions">
+  Optional parameters for sending media group.
+</ParamField>
+
+<ResponseField name="return" type="Promise<TelegramBot.Message[]>">
+  Array of sent messages.
+</ResponseField>
+
+```typescript
+const messages = await bot.sendMediaGroupTenByTen(
+  chatId,
+  [
+    { type: 'photo', media: 'https://example.com/photo1.jpg' },
+    { type: 'photo', media: 'https://example.com/photo2.jpg' }
+  ]
+);
+```
+
+##### sendDocumentOnebyOne()
+
+Sends multiple documents one by one to a chat.
+
+<ParamField path="chatId" type="TelegramBot.ChatId" required>
+  The chat ID to send documents to.
+</ParamField>
+
+<ParamField path="documents" type="string[] | Stream[] | Buffer[]" required>
+  Array of documents to send.
+</ParamField>
+
+<ParamField path="options" type="TelegramBot.SendDocumentOptions">
+  Optional parameters for sending documents.
+</ParamField>
+
+<ParamField path="fileOptions" type="TelegramBot.FileOptions">
+  Additional file options.
+</ParamField>
+
+<ResponseField name="return" type="Promise<TelegramBot.Message[]>">
+  Array of sent messages.
+</ResponseField>
+
+```typescript
+await bot.sendDocumentOnebyOne(
+  chatId,
+  [buffer1, buffer2],
+  { caption: 'Documents' }
+);
+```
+
+##### getCommands
+
+Gets all registered commands as an array of tuples.
+
+<ResponseField name="return" type="[RegExp, IExportCMD][]">
+  Array of command patterns and their handlers.
+</ResponseField>
+
+```typescript
+const commands = bot.getCommands;
+```
+
+##### findCommand()
+
+Finds a command that matches the given string.
+
+<ParamField path="str" type="string" required>
+  The string to match against command patterns.
+</ParamField>
+
+<ResponseField name="return" type="[boolean, [RegExp, IExportCMD] | []]">
+  Tuple with match status and command data if found.
+</ResponseField>
+
+```typescript
+const [found, command] = bot.findCommand('/start');
+if (found) {
+  console.log('Command found:', command);
+}
+```
+
+##### loadEvents()
+
+Loads all event handlers for the bot.
+
+<ResponseField name="return" type="Promise<void>">
+  Promise that resolves when events are loaded.
+</ResponseField>
+
+##### loadCommands()
+
+Loads all commands from the commands directory.
+
+<ResponseField name="return" type="Promise<void>">
+  Promise that resolves when commands are loaded.
+</ResponseField>
+
+##### loadCommandsSlash()
+
+Loads slash commands and sets them using Telegram's setMyCommands API.
+
+<ResponseField name="return" type="Promise<void>">
+  Promise that resolves when slash commands are loaded.
+</ResponseField>
+
+##### loadHandlers()
+
+Loads all error handlers including anti-crash handlers.
+
+<ResponseField name="return" type="Promise<void>">
+  Promise that resolves when handlers are loaded.
+</ResponseField>
+
+##### dynamicImport()
+
+Dynamically imports a module by path.
+
+<ParamField path="path" type="string" required>
+  The module path to import.
+</ParamField>
+
+<ResponseField name="return" type="Promise<O>">
+  The imported module.
+</ResponseField>
+
+```typescript
+const module = await bot.dynamicImport<{ handler: Function }>(
+  '@/bot/events/client/message.js'
+);
+```
+
+---
+
+## Interfaces
+
+### IClsBot.ICTX
+
+Context object passed to command handlers.
+
+<ResponseField name="msg" type="TelegramBot.Message">
+  The raw Telegram message object.
+</ResponseField>
+
+<ResponseField name="ctx" type="Message">
+  The wrapped Message instance with helper methods.
+</ResponseField>
+
+### IClsBot.IExportCMD
+
+Command definition interface.
+
+<ResponseField name="active" type="boolean">
+  Whether the command is active and should be loaded.
+</ResponseField>
+
+<ResponseField name="regexp" type="RegExp">
+  Regular expression pattern to match the command.
+</ResponseField>
+
+<ResponseField name="cmd" type="(client: ClientBot, context: ICTX, match: RegExpMatchArray | null) => Promise<void>">
+  The command handler function.
+</ResponseField>
+
+### IClsBot.TSendContent
+
+Union type for sending different content types.
+
+<ResponseField name="text" type="string">
+  Text content to send.
+</ResponseField>
+
+<ResponseField name="doc" type="string | Stream | Buffer">
+  Document to send.
+</ResponseField>
+
+<ResponseField name="photo" type="string | Stream | Buffer">
+  Photo to send.
+</ResponseField>
+
+<ResponseField name="video" type="string | Stream | Buffer">
+  Video to send.
+</ResponseField>
+
+<ResponseField name="sticker" type="string | Stream | Buffer">
+  Sticker to send.
+</ResponseField>
+
+<ResponseField name="audio" type="string | Stream | Buffer">
+  Audio to send.
+</ResponseField>
+
+---
+
+## Message Class
+
+Wrapper class for Telegram messages with helper methods.
+
+### Constructor
+
+<ParamField path="client" type="ClientBot | TelegramBot" required>
+  The bot client instance.
+</ParamField>
+
+<ParamField path="data" type="TelegramBot.Message" required>
+  The raw Telegram message data.
+</ParamField>
+
+### Properties
+
+<ResponseField name="chatId" type="number">
+  The chat ID where the message was sent.
+</ResponseField>
+
+<ResponseField name="message_id" type="number">
+  The unique message identifier.
+</ResponseField>
+
+<ResponseField name="text" type="string | undefined">
+  The text content of the message.
+</ResponseField>
+
+<ResponseField name="isReply" type="boolean">
+  Whether this message is a reply to another message.
+</ResponseField>
+
+<ResponseField name="isGroup" type="boolean">
+  Whether the message was sent in a group chat.
+</ResponseField>
+
+<ResponseField name="isChannel" type="boolean">
+  Whether the message was sent in a channel.
+</ResponseField>
+
+### Methods
+
+#### send()
+
+Sends a message to the same chat. Supports multiple overloads for different content types.
+
+<ParamField path="content" type="{ text: string } | { doc: string | Stream | Buffer } | { photo: string | Stream | Buffer } | { video: string | Stream | Buffer } | { sticker: string | Stream | Buffer } | { audio: string | Stream | Buffer }" required>
+  Content to send.
+</ParamField>
+
+<ParamField path="options" type="TelegramBot.SendMessageOptions | TelegramBot.SendDocumentOptions | TelegramBot.SendPhotoOptions | TelegramBot.SendVideoOptions | TelegramBot.SendStickerOptions | TelegramBot.SendAudioOptions">
+  Options for sending the content.
+</ParamField>
+
+<ParamField path="fileOptions" type="TelegramBot.FileOptions">
+  Additional file options (for media types).
+</ParamField>
+
+<ResponseField name="return" type="Promise<Message>">
+  The sent message wrapped in the Message class.
+</ResponseField>
+
+```typescript
+// Send text
+await message.send({ text: 'Hello!' });
+
+// Send photo
+await message.send({ photo: buffer }, { caption: 'A photo' });
+
+// Send document
+await message.send({ doc: './file.pdf' });
+```
+
+#### reply()
+
+Replies to the message.
+
+<ParamField path="content" type="any" required>
+  Content to send as reply.
+</ParamField>
+
+<ParamField path="options" type="any">
+  Options for the reply.
+</ParamField>
+
+<ResponseField name="return" type="Promise<TelegramBot.Message>">
+  The sent reply message.
+</ResponseField>
+
+```typescript
+await message.reply('This is a reply!');
+```
+
+#### delete()
+
+Deletes the message.
+
+<ResponseField name="return" type="Promise<boolean | TelegramBot.Message>">
+  Result of the delete operation.
+</ResponseField>
+
+```typescript
+await message.delete();
+```
+
+#### editText()
+
+Edits the message text.
+
+<ParamField path="text" type="string" required>
+  New text for the message.
+</ParamField>
+
+<ParamField path="options" type="TelegramBot.EditMessageTextOptions">
+  Options for editing the message.
+</ParamField>
+
+<ResponseField name="return" type="Promise<TelegramBot.Message | boolean>">
+  The edited message or true on success.
+</ResponseField>
+
+```typescript
+await message.editText('Updated text', { parse_mode: 'Markdown' });
+```
+
+#### getQuotedMsg()
+
+Gets the quoted/replied message if this is a reply.
+
+<ResponseField name="return" type="TelegramBot.Message | undefined">
+  The quoted message or undefined.
+</ResponseField>
+
+```typescript
+const quoted = message.getQuotedMsg();
+if (quoted) {
+  console.log('Replying to:', quoted.text);
+}
+```
+
+#### getData()
+
+Gets the raw Telegram message data.
+
+<ResponseField name="return" type="TelegramBot.Message">
+  The raw message object.
+</ResponseField>
+
+---
+
+## Types
+
+### IClsBot.TImportEvent
+
+Event handler function type.
+
+```typescript
+type TImportEvent = (client: ClientBot, msg: TelegramBot.Message) => Promise<void>
+```
+
+### EChatType
+
+Enum for chat types.
+
+<ResponseField name="Group" type="'group'">
+  Regular group chat.
+</ResponseField>
+
+<ResponseField name="SuperGroup" type="'supergroup'">
+  Supergroup chat.
+</ResponseField>
+
+<ResponseField name="Channel" type="'channel'">
+  Channel.
+</ResponseField>
+
+---
+
+## Usage Examples
+
+### Creating a Simple Command
+
+```typescript
+import { ClientBot, IClsBot } from '@kreisler/bot-tl-ts';
+
+const command: IClsBot.IExportCMD = {
+  active: true,
+  regexp: /^\/start$/,
+  cmd: async (client, context, match) => {
+    const { msg, ctx } = context;
+    await ctx.send({ text: 'Welcome to the bot!' });
+  }
+};
+
+export default command;
+```
+
+### Handling Media Messages
+
+```typescript
+const bot = new ClientBot();
+
+bot.on('message', async (msg) => {
+  const message = new Message(bot, msg);
+  
+  if (msg.photo) {
+    await message.reply('Nice photo!');
+  }
+});
+```
+
+### Sending Multiple Photos
+
+```typescript
+const photos = [
+  { type: 'photo', media: 'https://example.com/1.jpg' },
+  { type: 'photo', media: 'https://example.com/2.jpg' },
+  { type: 'photo', media: 'https://example.com/3.jpg' }
+];
+
+await bot.sendMediaGroupTenByTen(chatId, photos);
+```
+
+### Custom Command with Regex
+
+```typescript
+const echoCommand: IClsBot.IExportCMD = {
+  active: true,
+  regexp: /^\/echo (.+)$/,
+  cmd: async (client, context, match) => {
+    if (!match) return;
+    const text = match[1];
+    await context.ctx.reply(text);
+  }
+};
+```
+
+---
+
+## Error Handling
+
+The bot includes built-in anti-crash handlers that catch unhandled exceptions and rejections:
+
+```typescript
+await bot.loadHandlers(); // Loads anti-crash handlers
+```
+
+---
+
+## Environment Variables
+
+<ParamField path="TELEGRAM_TOKEN_DEV" type="string" required>
+  Telegram bot token for development environment.
+</ParamField>
+
+<ParamField path="TELEGRAM_TOKEN_PROD" type="string" required>
+  Telegram bot token for production environment.
+</ParamField>
+
+<ParamField path="NODE_ENV" type="'development' | 'production'" default="'development'">
+  Environment mode.
+</ParamField>
+
+---
+
+## Dependencies
+
+- `node-telegram-bot-api` - Telegram Bot API wrapper
+- `@kreisler/bot-services` - Shared bot services
+- `@kreisler/createapi` - API request utilities
+- `@kreisler/debounce` - Debounce utilities
+- `@kreisler/js-helpers` - JavaScript helper functions
+- `file-type` - File type detection
+
+---
+
+## Links
+
+- [GitHub Repository](https://github.com/itskreisler/pkgs)
+- [NPM Package](https://www.npmjs.com/package/@kreisler/bot-tl-ts)
+- [Report Issues](https://github.com/itskreisler/pkgs/issues)
+- [Support](https://www.buymeacoffee.com/kreisler)

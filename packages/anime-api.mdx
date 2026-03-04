@@ -1,0 +1,531 @@
+---
+title: '@kreisler/anime-api'
+description: 'A comprehensive anime information API client for scraping and fetching anime data from multiple sources'
+---
+
+# @kreisler/anime-api
+
+A powerful TypeScript library for fetching anime information from various sources. This package provides a comprehensive API for searching, browsing, and retrieving detailed anime data including episodes, characters, videos, and download links.
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install @kreisler/anime-api
+```
+
+```bash pnpm
+pnpm add @kreisler/anime-api
+```
+
+```bash yarn
+yarn add @kreisler/anime-api
+```
+</CodeGroup>
+
+## Quick Start
+
+```typescript
+import { 
+  search, 
+  getAnimeInfo, 
+  latestAnimeAdded, 
+  latestEpisodesAdded 
+} from '@kreisler/anime-api';
+
+// Search for anime
+const results = await search('naruto');
+
+// Get detailed anime information
+const info = await getAnimeInfo('anime/7/naruto', 'Naruto');
+
+// Get latest anime added
+const latest = await latestAnimeAdded();
+
+// Get latest episodes
+const episodes = await latestEpisodesAdded();
+```
+
+## Core Features
+
+### Search Anime
+
+Search for anime by title:
+
+```typescript
+import { search } from '@kreisler/anime-api';
+
+const results = await search('one piece');
+
+console.log(results);
+// [
+//   {
+//     id: 'anime/1/one-piece',
+//     title: 'One Piece',
+//     poster: 'data:image/jpeg;base64,...',
+//     banner: 'https://...',
+//     synopsis: 'Monkey D. Luffy...',
+//     debut: '1999',
+//     type: 'TV',
+//     rating: '4.5',
+//     genres: ['Acción', 'Aventura', 'Comedia'],
+//     episodes: [ /* episode list */ ]
+//   }
+// ]
+```
+
+<Note>
+Images are automatically converted to base64 format for easy embedding and caching.
+</Note>
+
+### Get Anime Information
+
+Retrieve detailed information about a specific anime:
+
+```typescript
+import { getAnimeInfo } from '@kreisler/anime-api';
+
+const anime = await getAnimeInfo(
+  'anime/5226/tokyo-ghoul',
+  'Tokyo Ghoul'
+);
+
+console.log(anime);
+// [
+//   {
+//     id: 'anime/5226/tokyo-ghoul',
+//     title: 'Tokyo Ghoul',
+//     poster: 'data:image/jpeg;base64,...',
+//     banner: 'https://...',
+//     synopsis: 'Ken Kaneki is a college student...',
+//     debut: '2014',
+//     type: 'TV',
+//     rating: '4.8',
+//     genres: ['Acción', 'Drama', 'Horror'],
+//     episodes: [ /* episode list */ ],
+//     moreInfo: [ /* additional info */ ],
+//     promoList: [ /* promo videos */ ],
+//     charactersList: [ /* character info */ ]
+//   }
+// ]
+```
+
+### Browse Anime
+
+<Tabs>
+  <Tab title="By Type">
+    ```typescript
+    import { tv, movies, ova, special } from '@kreisler/anime-api';
+    
+    // TV Series
+    const tvAnime = await tv('updated', '1');
+    
+    // Movies
+    const movieAnime = await movies('added', '1');
+    
+    // OVA
+    const ovaAnime = await ova('updated', '2');
+    
+    // Specials
+    const specialAnime = await special('added', '1');
+    ```
+  </Tab>
+  
+  <Tab title="By State">
+    ```typescript
+    import { animeByState } from '@kreisler/anime-api';
+    
+    // Currently airing (state: 1)
+    const airing = await animeByState('1', 'updated', '1');
+    
+    // Completed (state: 2)
+    const completed = await animeByState('2', 'added', '1');
+    ```
+  </Tab>
+  
+  <Tab title="By Genre">
+    ```typescript
+    import { animeByGenres } from '@kreisler/anime-api';
+    
+    // Browse by genre
+    const comedy = await animeByGenres(
+      'comedia',
+      'updated',
+      '1'
+    );
+    
+    const action = await animeByGenres(
+      'accion',
+      'added',
+      '1'
+    );
+    ```
+  </Tab>
+</Tabs>
+
+### Parameters
+
+<Accordion title="Browse Parameters">
+- **order**: `'updated'` | `'added'` - Sort by last updated or recently added
+- **page**: `string` - Page number (starts from '1')
+- **state**: `string` - Anime state ('1' = airing, '2' = completed)
+- **genre**: `string` - Genre name in Spanish (e.g., 'comedia', 'accion', 'drama')
+</Accordion>
+
+## Latest Releases
+
+### Latest Anime Added
+
+Get the most recently added anime:
+
+```typescript
+import { latestAnimeAdded } from '@kreisler/anime-api';
+
+const latest = await latestAnimeAdded();
+
+console.log(latest);
+// [
+//   {
+//     id: 'anime/12345/new-anime',
+//     title: 'New Anime Title',
+//     poster: 'data:image/jpeg;base64,...',
+//     banner: 'https://...',
+//     synopsis: '...',
+//     debut: '2024',
+//     type: 'TV',
+//     rating: '4.5',
+//     genres: ['Acción', 'Aventura'],
+//     episodes: []
+//   }
+// ]
+```
+
+### Latest Episodes
+
+Get the most recently released episodes:
+
+```typescript
+import { latestEpisodesAdded } from '@kreisler/anime-api';
+
+const episodes = await latestEpisodesAdded();
+
+console.log(episodes);
+// [
+//   {
+//     id: 'ver/episode-id',
+//     title: 'Anime Name',
+//     poster: 'data:image/jpeg;base64,...',
+//     episode: 25,
+//     servers: [
+//       {
+//         server: 'Server Name',
+//         title: 'Episode 25',
+//         ads: 0,
+//         url: 'https://...',
+//         allow_mobile: true,
+//         code: 'embed_code'
+//       }
+//     ]
+//   }
+// ]
+```
+
+## Episode & Streaming
+
+### Get Anime Servers
+
+Get available streaming servers for an episode:
+
+```typescript
+import { getAnimeServers } from '@kreisler/anime-api';
+
+const servers = await getAnimeServers('ver/naruto-1');
+
+console.log(servers);
+// [
+//   {
+//     server: 'Streamtape',
+//     title: 'Naruto - Episodio 1',
+//     ads: 0,
+//     url: 'https://...',
+//     allow_mobile: true,
+//     code: '<iframe src="...">'
+//   },
+//   {
+//     server: 'Mega',
+//     title: 'Naruto - Episodio 1',
+//     ads: 0,
+//     allow_mobile: true,
+//     code: 'embed_code'
+//   }
+// ]
+```
+
+### Get Download Links
+
+Get download links for an episode:
+
+```typescript
+import { downloadLinksByEpsId } from '@kreisler/anime-api';
+
+const links = await downloadLinksByEpsId('episode-id');
+
+console.log(links);
+// [
+//   {
+//     server: 'Mega',
+//     url: 'https://mega.nz/...'
+//   },
+//   {
+//     server: 'MediaFire',
+//     url: 'https://mediafire.com/...'
+//   }
+// ]
+```
+
+<Warning>
+Download links are scraped from external sources and may become unavailable. Always check if the link is valid before presenting it to users.
+</Warning>
+
+## Character Information
+
+### Get Anime Characters
+
+Retrieve character information for an anime:
+
+```typescript
+import { getAnimeCharacters } from '@kreisler/anime-api';
+
+const characters = await getAnimeCharacters('Naruto');
+
+console.log(characters);
+// [
+//   {
+//     character: {
+//       id: 17,
+//       name: 'Naruto Uzumaki',
+//       image: 'https://cdn.myanimelist.net/...',
+//       role: 'Main'
+//     }
+//   },
+//   {
+//     character: {
+//       id: 145,
+//       name: 'Sasuke Uchiha',
+//       image: 'https://cdn.myanimelist.net/...',
+//       role: 'Main'
+//     }
+//   }
+// ]
+```
+
+### Get Promo Videos
+
+Get promotional videos for an anime:
+
+```typescript
+import { getAnimeVideoPromo } from '@kreisler/anime-api';
+
+const promos = await getAnimeVideoPromo('Tokyo Ghoul');
+
+console.log(promos);
+// [
+//   {
+//     title: 'Tokyo Ghoul PV',
+//     previewImage: 'https://...',
+//     videoURL: 'https://youtube.com/...'
+//   }
+// ]
+```
+
+## Data Structures
+
+### Anime Object
+
+```typescript
+interface Anime {
+  id: string | null;
+  title: string | null;
+  poster: string | null;        // Base64 encoded image
+  banner: string | null;
+  synopsis: string | null;
+  debut: string | null;
+  type: string | null;
+  rating: string | null;
+  genres: string[] | null;
+  episodes: AnimeEpisode[] | null;
+}
+```
+
+### Episode Object
+
+```typescript
+interface AnimeEpisode {
+  episode?: string;
+  id?: string;
+  imagePreview?: string;
+  nextEpisodeDate?: string;
+}
+```
+
+### Server Object
+
+```typescript
+interface IServersData {
+  server: string;           // Server name
+  title: string;            // Episode title
+  ads: number;              // Number of ads
+  url?: string;             // Direct URL
+  allow_mobile: boolean;    // Mobile support
+  code: string;             // Embed code
+}
+```
+
+### Filter Options
+
+```typescript
+interface IFlvFiltros {
+  'genre[]': 'comedia' | 'accion' | 'drama' | /* ... */;
+  'year[]': number;
+  'type[]': 'tv' | 'movie' | 'ova' | 'special';
+  'status[]': number;       // 1: airing, 2: completed
+  order: 'updated' | 'added';
+  page: string;
+}
+```
+
+## Complete Example
+
+```typescript
+import {
+  search,
+  getAnimeInfo,
+  getAnimeServers,
+  downloadLinksByEpsId,
+  latestAnimeAdded
+} from '@kreisler/anime-api';
+
+async function animeApp() {
+  // Search for anime
+  const searchResults = await search('demon slayer');
+  console.log('Found:', searchResults.length, 'results');
+  
+  // Get first result
+  const anime = searchResults[0];
+  console.log('Anime:', anime.title);
+  
+  // Get detailed information
+  const [details] = await getAnimeInfo(anime.id, anime.title);
+  console.log('Episodes:', details.episodes.length);
+  
+  // Get first episode servers
+  const firstEpisode = details.episodes[1]; // Skip index 0 (metadata)
+  const servers = await getAnimeServers(firstEpisode.id);
+  console.log('Available servers:', servers.length);
+  
+  // Get download links
+  const downloads = await downloadLinksByEpsId(firstEpisode.id);
+  console.log('Download options:', downloads.length);
+  
+  // Get latest anime
+  const latest = await latestAnimeAdded();
+  console.log('Latest anime:', latest[0].title);
+}
+
+animeApp();
+```
+
+## Express Server Example
+
+The package includes Express server setup:
+
+```typescript
+import express from 'express';
+import { search, getAnimeInfo } from '@kreisler/anime-api';
+
+const app = express();
+
+app.get('/api/search', async (req, res) => {
+  const query = req.query.q as string;
+  const results = await search(query);
+  res.json(results);
+});
+
+app.get('/api/anime/:id', async (req, res) => {
+  const id = req.params.id;
+  const title = req.query.title as string;
+  const info = await getAnimeInfo(id, title);
+  res.json(info);
+});
+
+app.listen(3000, () => {
+  console.log('API running on http://localhost:3000');
+});
+```
+
+## Dependencies
+
+This package depends on:
+
+- `cheerio` - HTML parsing and scraping
+- `cheerio-tableparser` - Table data extraction
+- `cloudscraper` - Bypass Cloudflare protection
+- `express` - Web server framework (optional)
+- `image-to-base64` - Image conversion
+- `body-parser` - Request body parsing
+- `cors` - Cross-origin resource sharing
+- `helmet` - Security headers
+
+## API Reference
+
+### Main Functions
+
+| Function | Parameters | Returns | Description |
+|----------|-----------|---------|-------------|
+| `search(query)` | `string` | `Promise<Anime[]>` | Search anime by title |
+| `getAnimeInfo(id, title)` | `string, string` | `Promise<Anime[]>` | Get detailed anime info |
+| `latestAnimeAdded()` | - | `Promise<Anime[]>` | Get latest anime |
+| `latestEpisodesAdded()` | - | `Promise<Episode[]>` | Get latest episodes |
+| `getAnimeServers(id)` | `string` | `Promise<IServersData[]>` | Get streaming servers |
+| `downloadLinksByEpsId(id)` | `string` | `Promise<IDownloadLinksByEpsId[]>` | Get download links |
+| `getAnimeCharacters(title)` | `string` | `Promise<Character[]>` | Get character list |
+| `getAnimeVideoPromo(title)` | `string` | `Promise<Promo[]>` | Get promo videos |
+| `tv(order, page)` | `string, string` | `Promise<Anime[]>` | Browse TV anime |
+| `movies(order, page)` | `string, string` | `Promise<Anime[]>` | Browse movies |
+| `ova(order, page)` | `string, string` | `Promise<Anime[]>` | Browse OVAs |
+| `special(order, page)` | `string, string` | `Promise<Anime[]>` | Browse specials |
+| `animeByState(state, order, page)` | `string, string, string` | `Promise<Anime[]>` | Browse by state |
+| `animeByGenres(genre, order, page)` | `string, string, string` | `Promise<Anime[]>` | Browse by genre |
+
+## Rate Limiting
+
+<Note>
+The package uses `cloudscraper` to handle requests. Be mindful of rate limits when making multiple concurrent requests. Consider implementing:
+
+- Request queuing
+- Caching frequently accessed data
+- Exponential backoff for retries
+</Note>
+
+## TypeScript Support
+
+Fully typed with comprehensive interfaces:
+
+```typescript
+import type {
+  IFlvFiltros,
+  IServersData,
+  IDownloadLinksByEpsId
+} from '@kreisler/anime-api';
+```
+
+## License
+
+MIT
+
+## Links
+
+- [GitHub Repository](https://github.com/itskreisler/pkgs)
+- [NPM Package](https://www.npmjs.com/package/@kreisler/anime-api)
+- [Report Issues](https://github.com/itskreisler/pkgs/issues)
+- [Support the Author](https://www.buymeacoffee.com/kreisler)

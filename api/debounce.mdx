@@ -1,0 +1,286 @@
+---
+title: '@kreisler/debounce'
+description: 'Advanced debounce function with immediate execution, callbacks, and flood detection'
+---
+
+# @kreisler/debounce
+
+A powerful debounce utility with advanced features including immediate execution, call tracking, flood detection, and lifecycle callbacks.
+
+## Installation
+
+```bash
+npm install @kreisler/debounce
+```
+
+## Core Function
+
+### debounce
+
+Creates a debounced version of a function that delays execution until after a specified wait period has elapsed since the last invocation.
+
+<ParamField path="func" type="Function" required>
+  The function to debounce.
+</ParamField>
+
+<ParamField path="msWait" type="number" required>
+  Number of milliseconds to wait before calling the function.
+</ParamField>
+
+<ParamField path="fns" type="TFns">
+  Optional configuration object with advanced features.
+  
+  <Expandable title="properties">
+    <ParamField path="immediate" type="boolean" default={false}>
+      If `true`, the function will be called immediately on the first invocation, then debounced for subsequent calls.
+    </ParamField>
+    
+    <ParamField path="onCall" type="Function">
+      Callback function invoked every time the debounced function is called (before the actual function executes).
+    </ParamField>
+    
+    <ParamField path="onComplete" type="Function">
+      Callback function invoked after the debounced function successfully executes.
+    </ParamField>
+    
+    <ParamField path="flood" type="number">
+      Number of calls before triggering the `onFlood` callback. Used for detecting rapid repeated calls.
+    </ParamField>
+    
+    <ParamField path="onFlood" type="Function">
+      Callback function invoked when the flood limit is reached.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ResponseField name="return" type="Function">
+  Returns a debounced version of the provided function that maintains the same signature and context.
+</ResponseField>
+
+## Type Definitions
+
+### TArrowFunction
+
+```typescript
+type TArrowFunction = (...args: any[]) => any
+```
+
+### TFns
+
+Configuration interface for debounce options.
+
+```typescript
+interface TFns {
+  immediate: boolean
+  onCall: Function
+  onComplete: Function
+  flood: number
+  onFlood: Function
+}
+```
+
+## Usage Examples
+
+### Basic Debounce
+
+```typescript
+import { debounce } from '@kreisler/debounce'
+
+const handleSearch = debounce((query: string) => {
+  console.log('Searching for:', query)
+}, 500)
+
+// Only the last call within 500ms will execute
+handleSearch('a')
+handleSearch('ab')
+handleSearch('abc') // Only this will log after 500ms
+```
+
+### Immediate Execution
+
+```typescript
+import { debounce } from '@kreisler/debounce'
+
+const saveData = debounce(
+  (data: string) => {
+    console.log('Saving:', data)
+  },
+  1000,
+  { immediate: true }
+)
+
+// First call executes immediately
+saveData('first')  // Logs immediately
+saveData('second') // Debounced
+saveData('third')  // Debounced (only this will execute after 1000ms)
+```
+
+### With Lifecycle Callbacks
+
+```typescript
+import { debounce } from '@kreisler/debounce'
+
+const processInput = debounce(
+  (input: string) => {
+    console.log('Processing:', input)
+  },
+  1000,
+  {
+    onCall: (...args) => {
+      console.log('Function called with:', args)
+    },
+    onComplete: (...args) => {
+      console.log('Processing completed for:', args)
+    }
+  }
+)
+
+processInput('test')
+// Logs: "Function called with: ['test']"
+// After 1000ms:
+// Logs: "Processing: test"
+// Logs: "Processing completed for: ['test']"
+```
+
+### Flood Detection
+
+```typescript
+import { debounce } from '@kreisler/debounce'
+
+const handleClick = debounce(
+  () => {
+    console.log('Click processed')
+  },
+  500,
+  {
+    flood: 5,
+    onFlood: () => {
+      console.warn('Too many clicks detected!')
+    }
+  }
+)
+
+// Clicking rapidly
+for (let i = 0; i < 10; i++) {
+  handleClick()
+}
+// Logs "Too many clicks detected!" when count reaches 5 and 10
+```
+
+### Complete Example with All Features
+
+```typescript
+import { debounce } from '@kreisler/debounce'
+
+const consoleLogDebounced = debounce(
+  console.log,
+  1000,
+  {
+    immediate: true,
+    onCall: (...args) => console.log('Calling debounce function'),
+    onComplete: (...args) => console.log('Debounce function completed'),
+    flood: 7,
+    onFlood: (...args) => console.log('Flood limit reached')
+  }
+)
+
+// Usage
+for (let i = 0; i < 10; i++) {
+  consoleLogDebounced(`Message ${i}`)
+}
+```
+
+### Search Input Example (React)
+
+```typescript
+import { debounce } from '@kreisler/debounce'
+import { useCallback } from 'react'
+
+function SearchComponent() {
+  const performSearch = useCallback(
+    debounce(
+      async (query: string) => {
+        const results = await fetch(`/api/search?q=${query}`)
+        console.log(await results.json())
+      },
+      300
+    ),
+    []
+  )
+
+  return (
+    <input
+      type="text"
+      onChange={(e) => performSearch(e.target.value)}
+      placeholder="Search..."
+    />
+  )
+}
+```
+
+### Window Resize Handler
+
+```typescript
+import { debounce } from '@kreisler/debounce'
+
+const handleResize = debounce(
+  () => {
+    console.log('Window resized to:', window.innerWidth, window.innerHeight)
+  },
+  250,
+  {
+    onComplete: () => {
+      console.log('Resize handling complete')
+    }
+  }
+)
+
+window.addEventListener('resize', handleResize)
+```
+
+### Form Auto-Save
+
+```typescript
+import { debounce } from '@kreisler/debounce'
+
+const autoSave = debounce(
+  async (formData: FormData) => {
+    await fetch('/api/save', {
+      method: 'POST',
+      body: formData
+    })
+  },
+  2000,
+  {
+    onCall: () => {
+      console.log('Changes detected...')
+    },
+    onComplete: () => {
+      console.log('Form saved successfully')
+    }
+  }
+)
+
+// Call on form changes
+form.addEventListener('input', () => {
+  autoSave(new FormData(form))
+})
+```
+
+## How It Works
+
+1. **Initial Call**: When the debounced function is called, it clears any existing timeout
+2. **Immediate Mode**: If `immediate` is `true` and it's the first call, executes immediately
+3. **Call Tracking**: Increments call counter and triggers `onCall` callback
+4. **Flood Detection**: Checks if call count is a multiple of `flood` value and triggers `onFlood`
+5. **Timeout**: Sets a new timeout for the specified wait duration
+6. **Execution**: After timeout expires, executes the original function and triggers `onComplete`
+7. **Context Preservation**: Maintains the correct `this` context throughout execution
+
+## Best Practices
+
+- Use appropriate wait times (300-500ms for user input, 150-250ms for resize/scroll)
+- Enable `immediate` for actions that should respond instantly on first interaction
+- Use `onFlood` to detect and prevent abuse or rapid repeated actions
+- Implement `onComplete` for cleanup or state updates after debounced actions
+- Consider using `onCall` for UI feedback while waiting for debounce execution

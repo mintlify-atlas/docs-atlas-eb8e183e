@@ -1,0 +1,185 @@
+---
+title: Installation
+description: Learn how to install Kreisler packages in your project using npm, yarn, or pnpm
+---
+
+## Choose your package manager
+
+Kreisler packages are published on npm and can be installed using any Node.js package manager. All packages follow the naming convention `@kreisler/package-name`.
+
+<Tabs>
+  <Tab title="npm">
+    ```bash
+    npm install @kreisler/package-name
+    ```
+  </Tab>
+  <Tab title="yarn">
+    ```bash
+    yarn add @kreisler/package-name
+    ```
+  </Tab>
+  <Tab title="pnpm">
+    ```bash
+    pnpm add @kreisler/package-name
+    ```
+  </Tab>
+</Tabs>
+
+## Available packages
+
+<CardGroup cols={2}>
+  <Card title="@kreisler/createapi" icon="globe" href="/packages/createapi">
+    HTTP API client with proxy-based interface
+  </Card>
+  <Card title="@kreisler/try-catch" icon="shield-check" href="/packages/try-catch">
+    Functional error handling wrapper
+  </Card>
+  <Card title="@kreisler/debounce" icon="clock" href="/packages/debounce">
+    Debounce utility with advanced features
+  </Card>
+  <Card title="@kreisler/js-helpers" icon="screwdriver-wrench" href="/packages/js-helpers">
+    Collection of JavaScript helper functions
+  </Card>
+  <Card title="@kreisler/js-cron" icon="calendar" href="/packages/js-cron">
+    Cron task scheduler wrapper
+  </Card>
+  <Card title="@kreisler/exec-promise" icon="terminal" href="/packages/exec-promise">
+    Promise-based child process execution
+  </Card>
+  <Card title="@kreisler/dirname-for-module" icon="folder" href="/packages/dirname-for-module">
+    ESM dirname helper for modules
+  </Card>
+  <Card title="@kreisler/bot-tl-ts" icon="telegram" href="/packages/bot-tl-ts">
+    Telegram bot framework
+  </Card>
+  <Card title="@kreisler/bot-wa-ts" icon="whatsapp" href="/packages/bot-wa-ts">
+    WhatsApp bot framework
+  </Card>
+  <Card title="@kreisler/anime-api" icon="video" href="/packages/anime-api">
+    Anime API client
+  </Card>
+</CardGroup>
+
+## Installing multiple packages
+
+You can install multiple Kreisler packages in a single command:
+
+<Tabs>
+  <Tab title="npm">
+    ```bash
+    npm install @kreisler/createapi @kreisler/try-catch @kreisler/debounce
+    ```
+  </Tab>
+  <Tab title="yarn">
+    ```bash
+    yarn add @kreisler/createapi @kreisler/try-catch @kreisler/debounce
+    ```
+  </Tab>
+  <Tab title="pnpm">
+    ```bash
+    pnpm add @kreisler/createapi @kreisler/try-catch @kreisler/debounce
+    ```
+  </Tab>
+</Tabs>
+
+## Requirements
+
+<Note>
+  All Kreisler packages require **Node.js 16.x or higher**. Some packages may have additional peer dependencies listed in their individual documentation.
+</Note>
+
+## Monorepo setup
+
+If you're working with a monorepo, you can install packages in specific workspaces:
+
+<Tabs>
+  <Tab title="npm">
+    ```bash
+    npm install @kreisler/createapi --workspace=my-workspace
+    ```
+  </Tab>
+  <Tab title="yarn">
+    ```bash
+    yarn workspace my-workspace add @kreisler/createapi
+    ```
+  </Tab>
+  <Tab title="pnpm">
+    ```bash
+    pnpm add @kreisler/createapi --filter my-workspace
+    ```
+  </Tab>
+</Tabs>
+
+## Module formats
+
+<Steps>
+  <Step title="ESM (ECMAScript Modules)">
+    All packages support ESM imports:
+    
+    ```javascript
+    import { createApi } from '@kreisler/createapi'
+    ```
+  </Step>
+  
+  <Step title="CommonJS">
+    Most packages also support CommonJS:
+    
+    ```javascript
+    const { createApi } = require('@kreisler/createapi')
+    ```
+  </Step>
+  
+  <Step title="TypeScript">
+    All packages include TypeScript type definitions:
+    
+    ```typescript
+    import { createApi, type ArgsCreateApi } from '@kreisler/createapi'
+    ```
+  </Step>
+</Steps>
+
+## Verification
+
+After installation, you can verify the package is correctly installed:
+
+```bash
+npm list @kreisler/createapi
+```
+
+This will display the installed version and its location in your project's dependency tree.
+
+## Troubleshooting
+
+<Warning>
+  If you encounter installation issues, try clearing your package manager's cache:
+  
+  - **npm**: `npm cache clean --force`
+  - **yarn**: `yarn cache clean`
+  - **pnpm**: `pnpm store prune`
+</Warning>
+
+### Common issues
+
+**Package not found**
+
+Ensure you're using the correct package name with the `@kreisler/` scope:
+
+```bash
+# Correct
+npm install @kreisler/createapi
+
+# Incorrect
+npm install createapi
+```
+
+**Version conflicts**
+
+If you're experiencing version conflicts, you can specify an exact version:
+
+```bash
+npm install @kreisler/createapi@3.0.0
+```
+
+## Next steps
+
+Now that you've installed your packages, check out the [Quickstart](/quickstart) guide to start using them in your project.

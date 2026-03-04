@@ -1,0 +1,241 @@
+---
+title: '@kreisler/createapi'
+description: 'Create dynamic API instances with automatic proxy-based endpoint generation'
+---
+
+# @kreisler/createapi
+
+Create dynamic API instances that automatically generate endpoints using JavaScript Proxy. Simplifies API consumption by providing a flexible, type-safe interface for making HTTP requests.
+
+## Installation
+
+```bash
+npm install @kreisler/createapi
+```
+
+## Core Function
+
+### createApi
+
+Creates a dynamic API proxy that automatically generates endpoints based on property access.
+
+<ParamField path="url" type="string | URL" required>
+  The base URL for the API. Can be a string or URL object.
+</ParamField>
+
+<ParamField path="args" type="ArgsCreateApi">
+  Optional configuration object for request initialization and behavior.
+  
+  <Expandable title="properties">
+    <ParamField path="x_debug" type="boolean" default={false}>
+      Enable debug mode to return request information instead of making actual requests.
+    </ParamField>
+    
+    <ParamField path="x_json" type="boolean" default={false}>
+      Force JSON response parsing.
+    </ParamField>
+    
+    <ParamField path="x_text" type="boolean" default={false}>
+      Force text response parsing.
+    </ParamField>
+    
+    <ParamField path="x_response" type="boolean" default={false}>
+      Return the raw Response object instead of parsing.
+    </ParamField>
+    
+    All standard `RequestInit` properties (headers, method, body, etc.) are also supported.
+  </Expandable>
+</ParamField>
+
+<ResponseField name="return" type="I">
+  Returns a proxied API instance with the generic type `I` defining available endpoints.
+</ResponseField>
+
+## Type Definitions
+
+### ArgsCreateApi
+
+Extends `RequestInit` with additional control flags.
+
+```typescript
+interface ArgsCreateApi extends RequestInit {
+  x_debug?: boolean | undefined
+  x_json?: boolean | undefined
+  x_text?: boolean | undefined
+  x_response?: boolean | undefined
+}
+```
+
+### DebugResponse
+
+Returned when `x_debug` is enabled.
+
+```typescript
+interface DebugResponse {
+  prop: string
+  path: string
+  id: string | number | object | undefined | null
+  params: string | string[][] | undefined
+  args: ArgsCreateApi
+  target: object
+  receiver: object
+}
+```
+
+### DemoUrlsEnum
+
+Pre-configured demo API URLs for testing.
+
+```typescript
+enum DemoUrlsEnum {
+  NEKOBOT = 'https://nekobot.xyz/api',
+  POKEAPI = 'https://pokeapi.co/api/v2',
+  POSTMAN = 'https://postman-echo.com',
+  ANIMEFLV_KUDASAI = 'https://www3.animeflv.net',
+  FRASEDELDIA = 'https://frasedeldia.azurewebsites.net/api',
+  ADVICE = 'https://api.adviceslip.com',
+  DECAPI = 'https://decapi.me'
+}
+```
+
+## Usage Examples
+
+### Basic Pokemon API
+
+```typescript
+import { createApi, DemoUrlsEnum } from '@kreisler/createapi'
+
+interface POKEAPI {
+  pokemon: {
+    (options: { limit: number, offset: number }): Promise<{
+      count: number
+      next: string
+      previous: string
+      results: Array<{ name: string, url: string }>
+    }>
+    (name: string): Promise<{ name: string, id: number }>
+  }
+  'pokemon-species': (name: string) => Promise<{ name: string, id: number }>
+  type: (id: number) => Promise<{ name: string, id: number }>
+}
+
+const pokeapi: POKEAPI = createApi(DemoUrlsEnum.POKEAPI)
+
+// Fetch specific Pokemon
+const pikachu = await pokeapi.pokemon('pikachu')
+console.log(pikachu)
+
+// Fetch with query parameters
+const list = await pokeapi.pokemon({ limit: 20, offset: 0 })
+console.log(list.results)
+```
+
+### Postman Echo API
+
+```typescript
+import { createApi, DemoUrlsEnum } from '@kreisler/createapi'
+
+interface PostMan {
+  get: (id?: string | number | object, params?: object, extraparams?: RequestInit) => 
+    Promise<{args: object, headers: object, url: string}>
+  post: (id?: string | number | object, params?: object, extraparams?: RequestInit) => 
+    Promise<{args: object, headers: object, url: string}>
+}
+
+const postMan: PostMan = createApi(DemoUrlsEnum.POSTMAN)
+
+const get = await postMan.get()
+const post = await postMan.post()
+console.log(get, post)
+```
+
+### Image Placeholder with Raw Response
+
+```typescript
+import { createApi, type ArgsCreateApi } from '@kreisler/createapi'
+import { writeFile } from 'fs/promises'
+
+const imageplaceholder = createApi<{
+  'img.jpg': (
+    options: { w: number, h: number, tc: string, bg: string, t: string },
+    _: null,
+    __: ArgsCreateApi
+  ) => Promise<Response>
+}>('https://via.assets.so')
+
+const data = await imageplaceholder['img.jpg'](
+  { w: 400, h: 150, tc: 'blue', bg: '#cecece', t: 'Create API' },
+  null,
+  { x_response: true }
+)
+
+const buffer = await data.arrayBuffer()
+await writeFile('img.jpg', Buffer.from(buffer), { encoding: 'binary' })
+```
+
+### Debug Mode
+
+```typescript
+import { createApi, type DebugResponse } from '@kreisler/createapi'
+
+const api = createApi('https://api.example.com', { x_debug: true })
+
+const debugInfo: DebugResponse = await api.users('123')
+console.log(debugInfo.path) // 'https://api.example.com/users/123'
+console.log(debugInfo.prop) // 'users'
+console.log(debugInfo.id)   // '123'
+```
+
+### With Custom Headers
+
+```typescript
+import { createApi } from '@kreisler/createapi'
+
+const api = createApi('https://api.example.com', {
+  headers: {
+    'Authorization': 'Bearer token123',
+    'Content-Type': 'application/json'
+  }
+})
+
+const user = await api.users('123')
+```
+
+### Force Text Response
+
+```typescript
+import { createApi } from '@kreisler/createapi'
+
+const api = createApi('https://api.example.com')
+
+const html: string = await api.page('about', null, { x_text: true })
+console.log(html)
+```
+
+## How It Works
+
+The `createApi` function uses JavaScript Proxy to intercept property access and automatically construct API endpoints:
+
+1. **Property Access**: Accessing `api.users` creates the path `/users`
+2. **Function Call**: Calling `api.users('123')` adds the ID to the path: `/users/123`
+3. **Query Parameters**: Passing an object as the first argument creates query strings
+4. **Extra Parameters**: Third argument allows per-request configuration
+
+## Path Construction
+
+- **Simple path**: `api.users` → `GET /users`
+- **With ID**: `api.users('123')` → `GET /users/123`
+- **With query params**: `api.users({ limit: 10 })` → `GET /users?limit=10`
+- **With ID and params**: `api.users('123', { include: 'posts' })` → `GET /users/123?include=posts`
+
+## Error Handling
+
+The library throws errors for failed requests:
+
+```typescript
+try {
+  const data = await api.users('invalid-id')
+} catch (error) {
+  console.error(error.message) // "Request failed with status 404: Not Found"
+}
+```

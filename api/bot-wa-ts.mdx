@@ -1,0 +1,1184 @@
+---
+title: '@kreisler/bot-wa-ts'
+description: 'Complete API reference for the WhatsApp bot framework built with TypeScript and Baileys'
+---
+
+## Overview
+
+`@kreisler/bot-wa-ts` is a powerful TypeScript framework for building WhatsApp bots using the Baileys library. It provides a clean API for handling messages, media, stickers, and more.
+
+**Package**: `@kreisler/bot-wa-ts`  
+**Version**: `1.0.0`  
+**License**: MIT
+
+## Installation
+
+```bash
+npm install @kreisler/bot-wa-ts
+```
+
+## Quick Start
+
+```typescript
+import { Whatsapp } from '@kreisler/bot-wa-ts';
+
+const bot = new Whatsapp();
+
+await bot.WAConnect();
+await bot.loadHandlers();
+await bot.loadCommands();
+```
+
+---
+
+## Classes
+
+### Whatsapp
+
+Main WhatsApp bot client class that handles connections, messages, and commands.
+
+#### Constructor
+
+```typescript
+const bot = new Whatsapp();
+```
+
+#### Properties
+
+<ResponseField name="upTime" type="number">
+  Timestamp when the bot started (in milliseconds).
+</ResponseField>
+
+<ResponseField name="logger" type="any">
+  Pino logger instance for debugging (set to silent by default).
+</ResponseField>
+
+<ResponseField name="sock" type="WASocket">
+  The Baileys WhatsApp socket connection.
+</ResponseField>
+
+<ResponseField name="status" type="number">
+  Current connection status (0 = disconnected).
+</ResponseField>
+
+<ResponseField name="qr" type="string | null | undefined">
+  QR code string for WhatsApp authentication.
+</ResponseField>
+
+<ResponseField name="commands" type="Map<RegExp, CommandImport>">
+  Map of registered commands with their RegExp patterns.
+</ResponseField>
+
+<ResponseField name="folderCreds" type="string" default="'creds'">
+  Folder name for storing authentication credentials.
+</ResponseField>
+
+#### Methods
+
+##### WAConnect()
+
+Establishes connection to WhatsApp servers and handles authentication.
+
+<ResponseField name="return" type="Promise<void>">
+  Promise that resolves when connection is established.
+</ResponseField>
+
+```typescript
+await bot.WAConnect();
+```
+
+##### getMeInfo()
+
+Retrieves the bot's WhatsApp profile information.
+
+<ResponseField name="return" type="Promise<{ id: string, name: string }>">
+  Bot user information.
+</ResponseField>
+
+```typescript
+const info = await bot.getMeInfo();
+console.log('Bot name:', info?.name);
+```
+
+##### sendMsgGroup()
+
+Sends multiple messages to one or more chats with batch processing.
+
+<ParamField path="jids" type="string | string[]" required>
+  WhatsApp JID(s) to send messages to (e.g., "1234567890@s.whatsapp.net").
+</ParamField>
+
+<ParamField path="media" type="AnyMessageContent[] | Promise<AnyMessageContent[]>" required>
+  Array of message content to send.
+</ParamField>
+
+<ParamField path="options" type="MiscMessageGenerationOptions">
+  Additional message options.
+</ParamField>
+
+<ParamField path="batchSize" type="number" default="10">
+  Number of messages to send per batch.
+</ParamField>
+
+<ResponseField name="return" type="Promise<(proto.WebMessageInfo | undefined)[]>">
+  Array of sent message info objects.
+</ResponseField>
+
+```typescript
+const messages = [
+  { text: 'Hello!' },
+  { text: 'How are you?' }
+];
+
+await bot.sendMsgGroup(
+  '1234567890@s.whatsapp.net',
+  messages
+);
+```
+
+##### sendMsgGroupBatch()
+
+Sends messages in controlled batches with delays to avoid rate limits.
+
+<ParamField path="jids" type="string | string[]" required>
+  WhatsApp JID(s) to send messages to.
+</ParamField>
+
+<ParamField path="media" type="AnyMessageContent[] | Promise<AnyMessageContent[]>" required>
+  Array of message content to send.
+</ParamField>
+
+<ParamField path="options" type="MiscMessageGenerationOptions">
+  Additional message options.
+</ParamField>
+
+<ParamField path="batchSize" type="number" default="5">
+  Number of messages per batch.
+</ParamField>
+
+<ResponseField name="return" type="Promise<(proto.WebMessageInfo | undefined)[]>">
+  Array of sent message info objects.
+</ResponseField>
+
+##### getTextMessage()
+
+Extracts text content and message type from a WhatsApp message.
+
+<ParamField path="c" type="proto.IMessage | null | undefined" required>
+  The message object to parse.
+</ParamField>
+
+<ResponseField name="return" type="BodyMsg">
+  Object containing body text and message type.
+  
+  <Expandable title="BodyMsg properties">
+    <ResponseField name="body" type="string | null | undefined">
+      The extracted text content.
+    </ResponseField>
+    <ResponseField name="typeMessage" type="WaMessageTypes">
+      The type of message (conversation, imageMessage, videoMessage, etc.).
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+```typescript
+const { body, typeMessage } = bot.getTextMessage(message);
+console.log('Message text:', body);
+console.log('Message type:', typeMessage);
+```
+
+##### getMessageBody()
+
+Extracts full message body including quoted messages.
+
+<ParamField path="c" type="proto.IMessage | null | undefined" required>
+  The message object to parse.
+</ParamField>
+
+<ResponseField name="return" type="MessageBody">
+  Object with message body and quoted message body if present.
+  
+  <Expandable title="MessageBody properties">
+    <ResponseField name="body" type="string | null | undefined">
+      The message text.
+    </ResponseField>
+    <ResponseField name="typeMessage" type="WaMessageTypes">
+      The message type.
+    </ResponseField>
+    <ResponseField name="quotedBody" type="BodyMsg | undefined">
+      The quoted message body if this is a reply.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+##### sendText()
+
+Sends a text message to a chat.
+
+<ParamField path="jid" type="string" required>
+  WhatsApp JID of the recipient.
+</ParamField>
+
+<ParamField path="str" type="AnyMessageContent" required>
+  Message content to send.
+</ParamField>
+
+<ParamField path="op" type="MiscMessageGenerationOptions" default="{}">
+  Additional options for the message.
+</ParamField>
+
+<ResponseField name="return" type="Promise<void>">
+  Promise that resolves when message is sent.
+</ResponseField>
+
+```typescript
+await bot.sendText(
+  '1234567890@s.whatsapp.net',
+  { text: 'Hello from bot!' }
+);
+```
+
+##### imageUrl2Base64()
+
+Converts an image URL to base64 buffer with MIME type validation.
+
+<ParamField path="url" type="string" required>
+  URL of the image to download.
+</ParamField>
+
+<ResponseField name="return" type="Promise<[Buffer, string]>">
+  Tuple containing the image buffer and MIME type.
+</ResponseField>
+
+```typescript
+const [buffer, mimeType] = await bot.imageUrl2Base64(
+  'https://example.com/image.jpg'
+);
+console.log('Image type:', mimeType);
+```
+
+##### buffer2base64()
+
+Converts a buffer to base64 data URL.
+
+<ParamField path="buffer" type="Buffer" required>
+  The buffer to convert.
+</ParamField>
+
+<ParamField path="mimeType" type="string" required>
+  MIME type of the image (e.g., 'image/png').
+</ParamField>
+
+<ResponseField name="return" type="string">
+  Base64 data URL string.
+</ResponseField>
+
+```typescript
+const dataUrl = bot.buffer2base64(buffer, 'image/png');
+// Returns: "data:image/png;base64,iVBORw0KG..."
+```
+
+##### stickerGenerator()
+
+Generates a WhatsApp sticker from image data.
+
+<ParamField path="mediaData" type="string | Buffer" required>
+  Image data (path or buffer) to convert to sticker.
+</ParamField>
+
+<ResponseField name="return" type="Promise<Buffer>">
+  WebP sticker buffer.
+</ResponseField>
+
+```typescript
+const stickerBuffer = await bot.stickerGenerator(imageBuffer);
+await bot.sock.sendMessage(jid, {
+  sticker: stickerBuffer
+});
+```
+
+##### stickerGeneratorFromPath()
+
+Generates a sticker from an image path or buffer and returns it ready to send.
+
+<ParamField path="image" type="string | Buffer" required>
+  Path to image file or image buffer.
+</ParamField>
+
+<ResponseField name="return" type="Promise<AnyMessageContent>">
+  Message content object ready to send as sticker.
+</ResponseField>
+
+```typescript
+const stickerMsg = await bot.stickerGeneratorFromPath('./image.jpg');
+await bot.sock.sendMessage(jid, stickerMsg);
+```
+
+##### getMedia()
+
+Downloads media from a WhatsApp message.
+
+<ParamField path="msg" type="DownloadableMessage" required>
+  The downloadable message object.
+</ParamField>
+
+<ParamField path="type" type="MediaType" required>
+  Type of media to download ('image', 'video', 'audio', 'document', 'sticker').
+</ParamField>
+
+<ParamField path="opt" type="MediaDownloadOptions">
+  Options for downloading the media.
+</ParamField>
+
+<ResponseField name="return" type="Promise<Buffer>">
+  Buffer containing the downloaded media.
+</ResponseField>
+
+```typescript
+if (message.imageMessage) {
+  const buffer = await bot.getMedia(
+    message.imageMessage,
+    'image'
+  );
+  // Process image buffer...
+}
+```
+
+##### hasOwnProp()
+
+Checks if an object has a nested property using dot notation.
+
+<ParamField path="obj" type="any" required>
+  The object to check.
+</ParamField>
+
+<ParamField path="prop" type="string" required>
+  Property path in dot notation (e.g., 'user.profile.name').
+</ParamField>
+
+<ResponseField name="return" type="boolean">
+  True if the property exists, false otherwise.
+</ResponseField>
+
+```typescript
+if (bot.hasOwnProp(message, 'extendedTextMessage.text')) {
+  const text = message.extendedTextMessage.text;
+}
+```
+
+##### getNestedProp()
+
+Retrieves a nested property value from an object using dot notation.
+
+<ParamField path="obj" type="any" required>
+  The object to retrieve from.
+</ParamField>
+
+<ParamField path="propPath" type="string" required>
+  Property path in dot notation.
+</ParamField>
+
+<ResponseField name="return" type="U | undefined">
+  The property value or undefined if not found.
+</ResponseField>
+
+```typescript
+const caption = bot.getNestedProp<string>(
+  message,
+  'imageMessage.caption'
+);
+```
+
+##### loadEvents()
+
+Loads all WhatsApp event handlers (connection updates, message upsert, credentials).
+
+<ResponseField name="return" type="Promise<void>">
+  Promise that resolves when events are loaded.
+</ResponseField>
+
+```typescript
+await bot.loadEvents();
+```
+
+##### loadCommands()
+
+Loads all bot commands from the commands directory.
+
+<ResponseField name="return" type="Promise<void>">
+  Promise that resolves when commands are loaded.
+</ResponseField>
+
+```typescript
+await bot.loadCommands();
+console.log(`${bot.getCommands().length} commands loaded`);
+```
+
+##### loadHandlers()
+
+Loads error handlers, anti-crash handlers, and command registration.
+
+<ResponseField name="return" type="Promise<void>">
+  Promise that resolves when handlers are loaded.
+</ResponseField>
+
+##### getCommands()
+
+Returns all registered commands as an array of tuples.
+
+<ResponseField name="return" type="[RegExp, CommandImport][]">
+  Array of [pattern, command] tuples.
+</ResponseField>
+
+```typescript
+const commands = bot.getCommands();
+commands.forEach(([pattern, cmd]) => {
+  console.log('Pattern:', pattern);
+});
+```
+
+##### findCommand()
+
+Finds a command that matches the given string.
+
+<ParamField path="str" type="string" required>
+  The string to test against command patterns.
+</ParamField>
+
+<ResponseField name="return" type="[boolean, [RegExp, CommandImport] | []]">
+  Tuple with match status and command if found.
+</ResponseField>
+
+```typescript
+const [found, [pattern, command]] = bot.findCommand('.ping');
+if (found) {
+  await command.cmd(bot, context, []);
+}
+```
+
+##### send()
+
+Sends various types of content to a chat.
+
+<ParamField path="id" type="string" required>
+  WhatsApp JID of the recipient.
+</ParamField>
+
+<ParamField path="content" type="string | Media | AnyMessageContent" required>
+  Content to send (text, Media object, or Baileys message content).
+</ParamField>
+
+<ParamField path="opts" type="MiscMessageGenerationOptions">
+  Additional message options.
+</ParamField>
+
+<ResponseField name="return" type="Promise<Message>">
+  The sent message wrapped in Message class.
+</ResponseField>
+
+```typescript
+// Send text
+await bot.send(jid, 'Hello!');
+
+// Send media
+const media = new Media(buffer, {
+  mimetype: 'image/jpeg',
+  size: buffer.length,
+  text: 'Caption'
+});
+await bot.send(jid, media);
+```
+
+---
+
+## Message Class
+
+Wrapper class for WhatsApp messages with helper methods.
+
+### Constructor
+
+<ParamField path="client" type="Whatsapp" required>
+  The Whatsapp bot instance.
+</ParamField>
+
+<ParamField path="data" type="proto.IWebMessageInfo" required>
+  The raw WhatsApp message data.
+</ParamField>
+
+### Properties
+
+<ResponseField name="id" type="string">
+  Unique message identifier.
+</ResponseField>
+
+<ResponseField name="author" type="User | GroupUser">
+  The message sender.
+</ResponseField>
+
+<ResponseField name="content" type="string">
+  Text content of the message.
+</ResponseField>
+
+<ResponseField name="isReply" type="boolean">
+  Whether this message is a reply to another message.
+</ResponseField>
+
+<ResponseField name="isGroup" type="boolean">
+  Whether the message was sent in a group.
+</ResponseField>
+
+<ResponseField name="fromMe" type="boolean">
+  Whether the message was sent by the bot.
+</ResponseField>
+
+<ResponseField name="hasMedia" type="boolean">
+  Whether the message contains media (image, video, document, etc.).
+</ResponseField>
+
+<ResponseField name="isViewOnce" type="boolean">
+  Whether the message is a view-once message.
+</ResponseField>
+
+<ResponseField name="type" type="WaMessageTypes">
+  The type of the message (conversation, imageMessage, etc.).
+</ResponseField>
+
+### Methods
+
+#### send()
+
+Sends a message to the same chat.
+
+<ParamField path="content" type="AnyMessageContent" required>
+  Content to send.
+</ParamField>
+
+<ParamField path="opts" type="MiscMessageGenerationOptions">
+  Additional options.
+</ParamField>
+
+<ResponseField name="return" type="Promise<proto.WebMessageInfo | undefined>">
+  The sent message info.
+</ResponseField>
+
+```typescript
+await message.send({ text: 'Reply message' });
+```
+
+#### reply()
+
+Replies to the message.
+
+<ParamField path="content" type="AnyMessageContent" required>
+  Content to send as reply.
+</ParamField>
+
+<ParamField path="opts" type="MiscMessageGenerationOptions">
+  Additional options.
+</ParamField>
+
+<ResponseField name="return" type="Promise<proto.WebMessageInfo | undefined>">
+  The sent reply message info.
+</ResponseField>
+
+```typescript
+await message.reply({ text: 'Thanks for your message!' });
+```
+
+#### react()
+
+Reacts to the message with an emoji.
+
+<ParamField path="reaction" type="string" required>
+  Emoji to react with.
+</ParamField>
+
+<ResponseField name="return" type="Promise<proto.WebMessageInfo | undefined>">
+  The reaction message info.
+</ResponseField>
+
+```typescript
+await message.react('👍');
+```
+
+#### delete()
+
+Deletes the message.
+
+<ResponseField name="return" type="Promise<Message>">
+  Result of the delete operation.
+</ResponseField>
+
+```typescript
+await message.delete();
+```
+
+#### getChat()
+
+Gets the chat where this message was sent.
+
+<ResponseField name="return" type="Promise<Chat | Group>">
+  Chat or Group instance.
+</ResponseField>
+
+```typescript
+const chat = await message.getChat();
+if (chat.isGroup()) {
+  console.log('Group name:', chat.name);
+}
+```
+
+#### downloadMediaV2()
+
+Downloads media from the message with file type detection.
+
+<ResponseField name="return" type="Promise<FetchBuffer | undefined>">
+  Object containing buffer and detected file type.
+  
+  <Expandable title="FetchBuffer properties">
+    <ResponseField name="buffer" type="Buffer">
+      The downloaded media buffer.
+    </ResponseField>
+    <ResponseField name="fileType" type="FileTypeResult">
+      Detected file type information.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+```typescript
+if (message.hasMedia) {
+  const media = await message.downloadMediaV2();
+  if (media) {
+    console.log('File type:', media.fileType?.ext);
+    // Process media.buffer...
+  }
+}
+```
+
+#### downloadMedia()
+
+Downloads media and wraps it in a Media class instance.
+
+<ResponseField name="return" type="Promise<Media> | undefined">
+  Media instance with buffer and metadata.
+</ResponseField>
+
+```typescript
+const media = await message.downloadMedia();
+if (media) {
+  console.log('MIME type:', media.mimetype);
+  console.log('Size:', media.size);
+}
+```
+
+#### readMessage()
+
+Marks the message as read.
+
+<ResponseField name="return" type="Promise<void>">
+  Promise that resolves when message is marked as read.
+</ResponseField>
+
+```typescript
+await message.readMessage();
+```
+
+#### getQuotedMsg()
+
+Gets the quoted/replied message if this is a reply.
+
+<ResponseField name="return" type="Message | undefined">
+  The quoted message or undefined.
+</ResponseField>
+
+```typescript
+if (message.isReply) {
+  const quoted = message.getQuotedMsg();
+  console.log('Replying to:', quoted?.content);
+}
+```
+
+#### getMentions()
+
+Gets all users mentioned in the message.
+
+<ResponseField name="return" type="Promise<User[]>">
+  Array of mentioned users.
+</ResponseField>
+
+```typescript
+const mentions = await message.getMentions();
+mentions.forEach(user => {
+  console.log('Mentioned:', user.number);
+});
+```
+
+---
+
+## Media Class
+
+Represents media content with metadata.
+
+### Constructor
+
+<ParamField path="buffer" type="Buffer" required>
+  The media buffer.
+</ParamField>
+
+<ParamField path="opts" type="object" required>
+  <Expandable title="Options">
+    <ParamField path="mimetype" type="string" required>
+      MIME type of the media.
+    </ParamField>
+    <ParamField path="size" type="number" required>
+      Size of the media in bytes.
+    </ParamField>
+    <ParamField path="text" type="string">
+      Caption or description.
+    </ParamField>
+    <ParamField path="viewOnce" type="boolean" default="true">
+      Whether the media is view-once.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+### Properties
+
+<ResponseField name="buffer" type="Buffer">
+  The media buffer data.
+</ResponseField>
+
+<ResponseField name="mimetype" type="string">
+  MIME type (e.g., 'image/jpeg').
+</ResponseField>
+
+<ResponseField name="size" type="number">
+  Size in bytes.
+</ResponseField>
+
+<ResponseField name="text" type="string | undefined">
+  Caption text.
+</ResponseField>
+
+<ResponseField name="isImage" type="boolean">
+  True if media is an image.
+</ResponseField>
+
+<ResponseField name="isVideo" type="boolean">
+  True if media is a video.
+</ResponseField>
+
+<ResponseField name="isAudio" type="boolean">
+  True if media is audio.
+</ResponseField>
+
+<ResponseField name="isDocument" type="boolean">
+  True if media is a document.
+</ResponseField>
+
+<ResponseField name="viewOnce" type="boolean">
+  Whether the media is view-once.
+</ResponseField>
+
+### Static Methods
+
+#### Media.create()
+
+Creates a Media instance from a file path.
+
+<ParamField path="path" type="string" required>
+  Path to the media file.
+</ParamField>
+
+<ParamField path="opts" type="object" required>
+  <Expandable title="Options">
+    <ParamField path="mimetype" type="'image' | 'video' | 'gif' | 'sticker'" required>
+      Media type.
+    </ParamField>
+    <ParamField path="text" type="string">
+      Caption.
+    </ParamField>
+    <ParamField path="viewOnce" type="boolean">
+      View-once flag.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ResponseField name="return" type="Media">
+  Media instance.
+</ResponseField>
+
+```typescript
+const media = Media.create('./photo.jpg', {
+  mimetype: 'image',
+  text: 'Check this out!'
+});
+
+await bot.send(jid, media);
+```
+
+---
+
+## User Class
+
+Represents a WhatsApp user.
+
+### Properties
+
+<ResponseField name="pushname" type="string | undefined">
+  User's display name.
+</ResponseField>
+
+<ResponseField name="number" type="string">
+  User's phone number.
+</ResponseField>
+
+<ResponseField name="id" type="string">
+  WhatsApp JID.
+</ResponseField>
+
+<ResponseField name="countryCode" type="string">
+  Country code.
+</ResponseField>
+
+### Methods
+
+#### getProfile()
+
+Retrieves the user's WhatsApp business profile.
+
+<ResponseField name="return" type="Promise<WABusinessProfile>">
+  Business profile information.
+</ResponseField>
+
+---
+
+## GroupUser Class
+
+Extends User for group chat members.
+
+### Additional Properties
+
+<ResponseField name="groupId" type="string">
+  The group's JID.
+</ResponseField>
+
+<ResponseField name="isAdmin" type="boolean">
+  Whether the user is a group admin.
+</ResponseField>
+
+### Methods
+
+#### sendDM()
+
+Sends a direct message to the user.
+
+<ParamField path="content" type="string | Media | AnyMessageContent" required>
+  Content to send.
+</ParamField>
+
+<ParamField path="opts" type="MiscMessageGenerationOptions">
+  Additional options.
+</ParamField>
+
+```typescript
+await groupUser.sendDM('Private message!');
+```
+
+#### getGroup()
+
+Gets the Group instance for this user's group.
+
+<ResponseField name="return" type="Promise<Group>">
+  The Group instance.
+</ResponseField>
+
+---
+
+## Chat Class
+
+Represents a WhatsApp chat.
+
+### Properties
+
+<ResponseField name="id" type="string">
+  Chat JID.
+</ResponseField>
+
+### Methods
+
+#### send()
+
+Sends a message to the chat.
+
+<ParamField path="content" type="string | Media | AnyMessageContent" required>
+  Content to send.
+</ParamField>
+
+<ResponseField name="return" type="Promise<Message>">
+  The sent message.
+</ResponseField>
+
+#### isGroup()
+
+Checks if the chat is a group.
+
+<ResponseField name="return" type="boolean">
+  True if the chat is a group.
+</ResponseField>
+
+---
+
+## Group Class
+
+Extends Chat for group chats.
+
+### Additional Properties
+
+<ResponseField name="name" type="string">
+  Group name.
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Group description.
+</ResponseField>
+
+### Methods
+
+#### isAdmin()
+
+Checks if a user is a group admin.
+
+<ParamField path="user" type="User" required>
+  User to check.
+</ParamField>
+
+<ResponseField name="return" type="boolean">
+  True if the user is an admin.
+</ResponseField>
+
+```typescript
+const group = await message.getChat() as Group;
+if (group.isAdmin(message.author)) {
+  // User is admin
+}
+```
+
+---
+
+## Interfaces
+
+### CommandImport
+
+Command definition interface.
+
+<ResponseField name="active" type="boolean">
+  Whether the command is active.
+</ResponseField>
+
+<ResponseField name="ExpReg" type="RegExp">
+  Regular expression pattern for matching.
+</ResponseField>
+
+<ResponseField name="cmd" type="(client: Whatsapp, context: ContextMsg, match: RegExpMatchArray) => Promise<void>">
+  Command handler function.
+</ResponseField>
+
+### ContextMsg
+
+Context passed to command handlers.
+
+<ResponseField name="wamsg" type="WAMessage">
+  Raw WhatsApp message.
+</ResponseField>
+
+<ResponseField name="msg" type="Message">
+  Wrapped Message instance.
+</ResponseField>
+
+<ResponseField name="body" type="string | null | undefined">
+  Message text content.
+</ResponseField>
+
+<ResponseField name="typeMessage" type="WaMessageTypes">
+  Message type.
+</ResponseField>
+
+<ResponseField name="quotedBody" type="BodyMsg | undefined">
+  Quoted message body if present.
+</ResponseField>
+
+### WaMessageTypes
+
+Enum of WhatsApp message types.
+
+```typescript
+enum WaMessageTypes {
+  extendedTextMessage = 'extendedTextMessage',
+  imageMessage = 'imageMessage',
+  videoMessage = 'videoMessage',
+  stickerMessage = 'stickerMessage',
+  audioMessage = 'audioMessage',
+  documentMessage = 'documentMessage',
+  documentWithCaptionMessage = 'documentWithCaptionMessage',
+  ephemeralMessage = 'ephemeralMessage',
+  conversation = 'conversation',
+  viewOnceMessage = 'viewOnceMessage',
+  viewOnceMessageV2 = 'viewOnceMessageV2'
+}
+```
+
+---
+
+## Usage Examples
+
+### Basic Bot Setup
+
+```typescript
+import { Whatsapp } from '@kreisler/bot-wa-ts';
+
+const bot = new Whatsapp();
+
+await bot.WAConnect();
+await bot.loadHandlers();
+await bot.loadCommands();
+
+console.log('Bot is ready!');
+```
+
+### Creating a Command
+
+```typescript
+import { CommandImport, ContextMsg } from '@kreisler/bot-wa-ts';
+
+const pingCommand: CommandImport = {
+  active: true,
+  ExpReg: /^\.ping$/i,
+  cmd: async (client, context, match) => {
+    const { msg } = context;
+    const start = Date.now();
+    
+    const sent = await msg.reply({ text: 'Pinging...' });
+    const latency = Date.now() - start;
+    
+    await client.sock.sendMessage(
+      sent.key.remoteJid!,
+      { text: `Pong! ${latency}ms`, edit: sent.key }
+    );
+  }
+};
+
+export default pingCommand;
+```
+
+### Handling Media Messages
+
+```typescript
+bot.sock.ev.on('messages.upsert', async ({ messages }) => {
+  for (const m of messages) {
+    const message = new Message(bot, m);
+    
+    if (message.hasMedia && message.type === 'imageMessage') {
+      const media = await message.downloadMediaV2();
+      
+      if (media) {
+        await message.reply({
+          text: `Received image: ${media.fileType?.ext}`
+        });
+      }
+    }
+  }
+});
+```
+
+### Creating Stickers
+
+```typescript
+const imageBuffer = /* get image buffer */;
+const stickerBuffer = await bot.stickerGenerator(imageBuffer);
+
+await bot.sock.sendMessage(jid, {
+  sticker: stickerBuffer
+});
+```
+
+### Batch Sending Messages
+
+```typescript
+const recipients = [
+  '1111111111@s.whatsapp.net',
+  '2222222222@s.whatsapp.net',
+  '3333333333@s.whatsapp.net'
+];
+
+const messages = [
+  { text: 'Hello!' },
+  { text: 'This is a broadcast message' }
+];
+
+await bot.sendMsgGroupBatch(
+  recipients,
+  messages,
+  {},
+  5 // Send 5 messages at a time
+);
+```
+
+### Checking Nested Properties
+
+```typescript
+if (bot.hasOwnProp(m.message, 'imageMessage.caption')) {
+  const caption = bot.getNestedProp<string>(
+    m.message,
+    'imageMessage.caption'
+  );
+  console.log('Image caption:', caption);
+}
+```
+
+---
+
+## Helper Functions
+
+### printLog()
+
+Colored console logging utility.
+
+<ParamField path="message" type="string" required>
+  Message to log.
+</ParamField>
+
+<ParamField path="color" type="'red' | 'green' | 'yellow' | 'cyan'" required>
+  Console color.
+</ParamField>
+
+```typescript
+import { printLog } from '@kreisler/bot-wa-ts';
+
+printLog('Bot started successfully', 'green');
+printLog('Warning: Low memory', 'yellow');
+printLog('Error occurred', 'red');
+```
+
+---
+
+## Dependencies
+
+- `baileys` - WhatsApp Web API library
+- `pino` - Fast JSON logger
+- `qrcode-terminal` - QR code display in terminal
+- `wa-sticker-formatter` - WhatsApp sticker creation
+- `@kreisler/bot-services` - Shared bot services
+- `@kreisler/createapi` - API utilities
+- `crypto-js` - Cryptographic functions
+- `file-type` - File type detection
+
+---
+
+## Links
+
+- [GitHub Repository](https://github.com/itskreisler/pkgs)
+- [NPM Package](https://www.npmjs.com/package/@kreisler/bot-wa-ts)
+- [Baileys Documentation](https://github.com/WhiskeySockets/Baileys)
+- [Report Issues](https://github.com/itskreisler/pkgs/issues)
+- [Support](https://www.buymeacoffee.com/kreisler)

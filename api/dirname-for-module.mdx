@@ -1,0 +1,296 @@
+---
+title: '@kreisler/dirname-for-module'
+description: 'Calculate __dirname equivalent for ES modules in monorepo environments'
+---
+
+# @kreisler/dirname-for-module
+
+Provides a pre-calculated `__dirname` equivalent for ES modules, with special handling for monorepo package managers (npm, pnpm) and scoped packages.
+
+## Installation
+
+```bash
+npm install @kreisler/dirname-for-module
+```
+
+## Problem Solved
+
+In ES modules, `__dirname` is not available. While you can calculate it using:
+
+```javascript
+import { fileURLToPath } from 'url'
+import { dirname } from 'path'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+```
+
+This package provides a pre-calculated value that accounts for monorepo structures and scoped packages, making it especially useful in complex project setups.
+
+## Export
+
+### __dirname
+
+Pre-calculated directory name for the current module.
+
+<ResponseField name="__dirname" type="string">
+  The absolute path to the directory containing the current module, adjusted for monorepo environments.
+</ResponseField>
+
+## How It Works
+
+The package intelligently calculates the correct directory path by:
+
+1. Converting the file URL to a path
+2. Detecting if running in a pnpm or npm environment
+3. Detecting if the package is scoped (starts with `@`)
+4. Adjusting the path length based on these conditions:
+   - **pnpm + scoped**: Slices path by -101 characters
+   - **pnpm + non-scoped**: Slices path by -76 characters
+   - **npm + scoped**: Slices path by -47 characters
+   - **npm + non-scoped**: Slices path by -32 characters
+
+## Internal Implementation
+
+```typescript
+function calculateDirname(filePath: string): string {
+  const path: string = dirname(filePath)
+  const isPNPM: boolean = path.includes("pnpm")
+  const isUSER: boolean = path.includes("@")
+
+  let sliceValue: number
+
+  if (isPNPM) {
+    sliceValue = isUSER ? -101 : -76
+  } else {
+    sliceValue = isUSER ? -47 : -32
+  }
+
+  return path.slice(0, sliceValue)
+}
+```
+
+## Usage Examples
+
+### Basic Usage
+
+```typescript
+import { __dirname } from '@kreisler/dirname-for-module'
+
+console.log('Current directory:', __dirname)
+// Output: /Users/username/projects/my-app/packages/my-package
+```
+
+### File Path Resolution
+
+```typescript
+import { __dirname } from '@kreisler/dirname-for-module'
+import { join } from 'path'
+
+// Resolve path to a config file
+const configPath = join(__dirname, 'config', 'app.json')
+console.log('Config path:', configPath)
+
+// Read a file relative to current module
+import { readFileSync } from 'fs'
+const data = readFileSync(join(__dirname, 'data.json'), 'utf-8')
+```
+
+### Loading Assets
+
+```typescript
+import { __dirname } from '@kreisler/dirname-for-module'
+import { join } from 'path'
+import { readFileSync } from 'fs'
+
+// Load template file
+const templatePath = join(__dirname, 'templates', 'email.html')
+const template = readFileSync(templatePath, 'utf-8')
+
+// Load static assets
+const logoPath = join(__dirname, 'assets', 'logo.png')
+```
+
+### Dynamic Imports
+
+```typescript
+import { __dirname } from '@kreisler/dirname-for-module'
+import { join } from 'path'
+
+// Dynamically import a module from a relative path
+const modulePath = join(__dirname, 'plugins', 'custom-plugin.js')
+const plugin = await import(modulePath)
+```
+
+### CLI Tool Path Resolution
+
+```typescript
+import { __dirname } from '@kreisler/dirname-for-module'
+import { join } from 'path'
+
+// Resolve path to executable scripts
+const scriptsDir = join(__dirname, 'scripts')
+const buildScript = join(scriptsDir, 'build.sh')
+
+console.log('Scripts directory:', scriptsDir)
+```
+
+### Monorepo Package Paths
+
+```typescript
+import { __dirname } from '@kreisler/dirname-for-module'
+import { join, resolve } from 'path'
+
+// Navigate to workspace root
+const workspaceRoot = resolve(__dirname, '../..')
+const sharedConfig = join(workspaceRoot, 'shared', 'config.json')
+
+console.log('Workspace root:', workspaceRoot)
+```
+
+### Logger with Module Path
+
+```typescript
+import { __dirname } from '@kreisler/dirname-for-module'
+import { basename } from 'path'
+
+const moduleName = basename(__dirname)
+
+const logger = {
+  info: (msg: string) => console.log(`[${moduleName}] ${msg}`),
+  error: (msg: string) => console.error(`[${moduleName}] ERROR: ${msg}`)
+}
+
+logger.info('Module initialized')
+// Output: [my-package] Module initialized
+```
+
+### Configuration Loading
+
+```typescript
+import { __dirname } from '@kreisler/dirname-for-module'
+import { join } from 'path'
+import { existsSync, readFileSync } from 'fs'
+
+function loadConfig() {
+  const configPaths = [
+    join(__dirname, 'config.json'),
+    join(__dirname, '..', 'config.json'),
+    join(__dirname, '../..', 'config.json')
+  ]
+
+  for (const configPath of configPaths) {
+    if (existsSync(configPath)) {
+      return JSON.parse(readFileSync(configPath, 'utf-8'))
+    }
+  }
+
+  throw new Error('Config file not found')
+}
+
+const config = loadConfig()
+```
+
+### Database Migrations Path
+
+```typescript
+import { __dirname } from '@kreisler/dirname-for-module'
+import { join } from 'path'
+
+const migrationsDir = join(__dirname, 'migrations')
+const seedsDir = join(__dirname, 'seeds')
+
+const dbConfig = {
+  migrations: {
+    directory: migrationsDir
+  },
+  seeds: {
+    directory: seedsDir
+  }
+}
+
+export default dbConfig
+```
+
+### Express Static Files
+
+```typescript
+import { __dirname } from '@kreisler/dirname-for-module'
+import express from 'express'
+import { join } from 'path'
+
+const app = express()
+
+// Serve static files from public directory
+const publicDir = join(__dirname, 'public')
+app.use(express.static(publicDir))
+
+// Serve uploaded files
+const uploadsDir = join(__dirname, 'uploads')
+app.use('/uploads', express.static(uploadsDir))
+```
+
+### Module Introspection
+
+```typescript
+import { __dirname } from '@kreisler/dirname-for-module'
+import { readFileSync } from 'fs'
+import { join } from 'path'
+
+// Read own package.json
+const packageJsonPath = join(__dirname, 'package.json')
+const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'))
+
+console.log(`Module: ${packageJson.name}`)
+console.log(`Version: ${packageJson.version}`)
+console.log(`Location: ${__dirname}`)
+```
+
+## Comparison with Alternatives
+
+### Standard ES Module Approach
+
+```typescript
+import { fileURLToPath } from 'url'
+import { dirname } from 'path'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+```
+
+### With @kreisler/dirname-for-module
+
+```typescript
+import { __dirname } from '@kreisler/dirname-for-module'
+```
+
+The package provides:
+- Pre-calculated value (no runtime overhead)
+- Monorepo-aware path adjustment
+- Scoped package support
+- Cleaner imports
+
+## When to Use
+
+This package is particularly useful when:
+
+- Working in monorepo environments (Lerna, Nx, Turborepo)
+- Using pnpm or npm workspaces
+- Building scoped packages (`@org/package-name`)
+- Need consistent path resolution across different package managers
+- Converting CommonJS modules to ES modules
+- Building CLI tools or Node.js applications
+
+## Limitations
+
+- The slice values are hardcoded for specific monorepo structures
+- May not work correctly in non-standard directory layouts
+- Assumes specific naming conventions for package managers
+- No runtime detection; values are calculated at module initialization
+
+## Best Practices
+
+- Use this package in monorepo setups where path calculations are complex
+- Combine with `path.join()` and `path.resolve()` for robust path handling
+- Test paths in both development and production environments
+- Consider using `import.meta.url` directly for simple single-package projects
